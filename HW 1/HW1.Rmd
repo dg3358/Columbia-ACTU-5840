@@ -3,11 +3,65 @@
 # By: Dennis Goldenberg
 
 ```{r echo, include = TRUE}
-1:5
+# import packages
+library(ggplot2)
+library(patchwork)
 ```
 
+## 1. Automobile Insurance Claims
+
 ```{r, include = TRUE}
-x <- c("Eagle", "EAgle", "EAgle", "EAGLE")
-x <- factor(x)
-x
+# read in Data
+auto <- read.table(file = 'AutoClaims-1.csv', header = TRUE, sep = ',')
+auto$state <- factor(auto$state, ordered = TRUE)
+auto$gender <- factor(auto$gender)
+auto$class <- factor(auto$class)
 ```
+
+### 1a.
+
+I compute the descriptive statistics for the "PAID" variable:
+
+```{r, inlcude = TRUE}
+summary(auto$paid)
+```
+
+So, the mean paid is \$1,853.00 and the median paid is \$1,001.70.
+
+### 1b.
+
+I graph the histogram and qqplot of "paid", comparing quantiles:
+
+```{r, include = TRUE}
+hist <- ggplot(data = auto) + 
+        geom_histogram(aes(paid), binwidth = 1000) +
+        labs(title = "Histogram of Payouts") + 
+        theme(plot.title = element_text(hjust = 0.5))
+qq <- ggplot(data = auto) + geom_qq(aes(sample = paid)) +
+      geom_qq_line(aes(sample = paid)) +
+      labs(x = "Standard Normal Quantiles", y = 'Quantiles, Paid') + 
+      labs(title = 'QQ plot') + 
+      theme(plot.title = element_text(hjust = 0.5))
+hist + plot_spacer() + qq + plot_layout(widths = c(6,0.5,6))
+```
+
+The qqplot suggests that the normal distribution is not a good fit. Based on the histogram, the distribution of paid looks $\textbf{lognormal}$.
+
+### 1c.
+
+I graph the histogram and qqplot of "logpaid", comparing quantiles:
+
+```{r, include = TRUE}
+hist <- ggplot(data = auto) + 
+        geom_histogram(aes(logpaid), binwidth = 0.25) +
+        labs(title = "Histogram of Payouts") + 
+        theme(plot.title = element_text(hjust = 0.5))
+qq <- ggplot(data = auto) + geom_qq(aes(sample = logpaid)) +
+      geom_qq_line(aes(sample = logpaid)) +
+    labs(x = "Standard Normal Quantiles", y = 'Quantiles, logPaid') +
+      labs(title = 'QQ plot') + 
+      theme(plot.title = element_text(hjust = 0.5))
+hist + plot_spacer() + qq + plot_layout(widths = c(6,0.5,6))
+```
+
+Based on the good fit in the qqplot, and the general shape in the histogram, the distribution of "logpaid" seems to be $\textbf{approximately normal}$. This would suggest that the distribution of paid is $\textbf{lognormal}$.
