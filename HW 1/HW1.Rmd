@@ -65,3 +65,30 @@ hist + plot_spacer() + qq + plot_layout(widths = c(6,0.5,6))
 ```
 
 Based on the good fit in the qqplot, and the general shape in the histogram, the distribution of "logpaid" seems to be $\textbf{approximately normal}$. This would suggest that the distribution of paid is $\textbf{lognormal}$.
+
+### 1d.
+
+I graph the scatterplot of "logpaid" against "age":
+
+```{r, inlcude = TRUE}
+scat <- ggplot(data = auto) + geom_point(aes(x = age, y = logpaid)) +
+        labs(title = "Natural log of Paid Amount vs. age") +
+        theme(plot.title = element_text(hjust = 0.5))
+scat
+```
+
+This plot suggests that the variance of log payments for individuals on the younger side (closer to 50) is higher than the variance of payments for older individuals; outside of this, however, there appears to be $\textbf{no discernable relationship}$ between the natural log of the paid amount for an automobile insurance claim and the age of an individual.
+
+### 1e.
+
+I account for gender in the next scatter plot:
+
+```{r, inlcude = TRUE}
+scat <- ggplot(data = auto) + 
+        geom_point(aes(x = age, y = logpaid, color = gender)) +
+        labs(title = "Natural log of Paid Amount vs. age") +
+        theme(plot.title = element_text(hjust = 0.5))
+scat
+```
+
+Based on the scatter plot above, there is $\textbf{no discernable relationship}$ between the natural log of the paid amount for an automobile insurance claim and the gender of an individual.
