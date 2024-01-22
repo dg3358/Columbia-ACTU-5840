@@ -1,0 +1,13 @@
+# Homework 1 - Predictive Modeling in Finance and Insurance
+
+# By: Dennis Goldenberg
+
+```{r echo, include = TRUE}
+1:5
+```
+
+```{r, include = TRUE}
+x <- c("Eagle", "EAgle", "EAgle", "EAGLE")
+x <- factor(x)
+x
+```
