@@ -4,9 +4,9 @@
 
 ```{r echo, include = TRUE}
 # import packages
-library(ggplot2)
-library(MASS)
+library(GGally)
 library(patchwork)
+library(MASS)
 ```
 
 ## 1. Automobile Insurance Claims
@@ -96,6 +96,18 @@ Based on the scatter plot above, there is $\textbf{no discernable relationship}$
 
 ## 2.
 
+### 2a.
+
+I first show to pairwise scatter plots of all combinations of variables:
+
 ```{r, include = TRUE}
-pairs(Boston)
+pairs(Boston, col = 'blue')
+```
+
+This output is too small to discern any patterns; I look at the correlation matrix to see which scatter plots may have a strong relationship. I find where the correlations are strongest by looking to see where the absolute value of the correlation is greater than 0.4:
+
+```{r, include = TRUE}
+cormatrix <- cor(Boston)
+strong_cor = cormatrix > 0.4 | cormatrix < -0.4
+strong_cor
 ```
