@@ -5,6 +5,7 @@
 ```{r echo, include = TRUE}
 # import packages
 library(ggplot2)
+library(MASS)
 library(patchwork)
 ```
 
@@ -92,3 +93,9 @@ scat
 ```
 
 Based on the scatter plot above, there is $\textbf{no discernable relationship}$ between the natural log of the paid amount for an automobile insurance claim and the gender of an individual.
+
+## 2.
+
+```{r, include = TRUE}
+pairs(Boston)
+```
