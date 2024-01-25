@@ -7,6 +7,7 @@
 library(ggplot2)
 library(patchwork)
 library(MASS)
+library(magrittr)
 ```
 
 ## 1. Automobile Insurance Claims
@@ -179,3 +180,36 @@ crimr <- ggplot(data = Boston) + geom_point(aes(ptratio,crim))
 ```
 
 Here, it appears as though crime rate has a $\textbf{direct relationship}$ with nitric oxide concentration; the areas with the highest crime rates tend to have higher crime rates; it is also true that the areas with the highest crime rates tend to have higher proportions of buildings built before 1940. Alternatively, the crime rate seems to be $\textbf{inversely related}$ to distance to employment centers; the areas closest to the employment centers tend to have the highest crime rates.
+
+### 2c.
+
+```{r, include = TRUE}
+```
+
+### 2d.
+
+The variable representing whether or not a suburb bounds the Charles river is 'chas'; it is a simple binary variable, with 1 indicating that the suburb bounds the river. I check how many satisfy this in total by summing the column:
+
+```{r, include = TRUE}
+Boston[['chas']] %>% sum
+```
+
+So, $\mathbf{35}$ suburbs bound the Charles river.
+
+### 2e.
+
+I check the summary of the ptratio:
+
+```{r, include = TRUE}
+summary(Boston['ptratio'])
+```
+
+The median pupil-teacher ratio is $\textbf{19.05}$ students per teacher.
+
+### 2f.
+
+```{r, include = TRUE}
+index <- which.min(Boston[['medv']])
+as.vector(Boston[index,])
+```
+The 399th suburb (value of index) has the lowest median value of owner-occupied homes, at \$5,000. This suburb has 
