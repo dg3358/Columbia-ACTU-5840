@@ -160,9 +160,9 @@ crimmedv <- ggplot(Boston) + geom_point(aes(x = medv, y = crim))
 
 (crimrad+plot_spacer()+crimtax+plot_layout(widths = c(6,0.5,6)))/
   plot_spacer()/
-  (crimlstat+plot_spacer()+crimindus+plot_layout(widths = c(6,0.5,6)))/
+(crimlstat+plot_spacer()+crimindus+plot_layout(widths = c(6,0.5,6)))/
   plot_spacer()/
-  (crimblack+plot_spacer()+crimmedv+plot_layout(widths = c(6,0.5,6))) +
+(crimblack+plot_spacer()+crimmedv+plot_layout(widths = c(6,0.5,6))) +
   plot_layout(heights = c(6, 0.5, 6, 0.5, 6))
 ```
 
@@ -183,8 +183,28 @@ Here, it appears as though crime rate has a $\textbf{direct relationship}$ with 
 
 ### 2c.
 
+The maximum, minimum, mean, and range of each variable is listed below:
+
 ```{r, include = TRUE}
+max_min <- cbind(apply(Boston, 2, min), apply(Boston, 2, mean),
+                 apply(Boston, 2, max))
+max_min2 <- cbind(max_min, max_min[,3] - max_min[,1])
+colnames(max_min2) <- c("Min", "Mean", "Max", "Range")
+max_min2
 ```
+
+The most notable results from this are the following: there is a wide range of tax rates and crime rates, because there is no theoretical ceiling as to how high they can go. Meanwhile, nitric oxide concentration has a much smaller range, but smaller movements in this predictor could be potentially more important due to the environmental changes caused. The black variable is a formula with a squared term, contributing to its large range. However, the age, zn, and indus variables are all proportions, so their theoretical range can only go from 0 to 100. Finally, though it seems that the median value of homes, or medv, has a smaller range than other variables, that it is because it was recorded in terms of \$1000s; in reality, it actually has the highest range, even higher than tax rates or crime rates. Next, I calculate the number of suburbs with one of the following: a crime rate per capita above 60, a tax rate per \$10,000 above 600, or a pupil-teacher ratio above 20:
+
+```{r, include = TRUE}
+hc <- as.numeric(Boston['crim'] > 60) %>% sum
+ht <- as.numeric(Boston['tax'] > 600) %>% sum
+hpt <- as.numeric(Boston['ptratio'] > 20) %>% sum
+highs <- as.matrix(c(hc, ht, hpt))
+rownames(highs) <- c("High Crime","High Tax", "High PT")
+highs
+```
+
+There are $\mathbf{3}$ suburbs with a crime rate above 60, $\mathbf{137}$ with a tax rate about 600, and $\mathbf{201}$ with a pupil-teacher ratio above 20.
 
 ### 2d.
 
@@ -212,4 +232,5 @@ The median pupil-teacher ratio is $\textbf{19.05}$ students per teacher.
 index <- which.min(Boston[['medv']])
 as.vector(Boston[index,])
 ```
-The 399th suburb (value of index) has the lowest median value of owner-occupied homes, at \$5,000. This suburb has 
+
+The 399th suburb (value of index) has the lowest median value of owner-occupied homes, at \$5,000. It achieves maximum possible values for the "age" (100% of homes in this suburb were built before 1940), black, and "rad" (accessibility to highways) variables. It has an above average nitric oxide concentration, tax rate, pupil-teacher ratio, non-retail business acre use rate ('indus'), weighted distance to employment centers ('dis'), and percent of inhabitants in lower status ('lstat'). It is below average for number of rooms per dwelling, and has no residential area zoned for lots above 25,000 square feet. It seems like a difficult area to live in.
