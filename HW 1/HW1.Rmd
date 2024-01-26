@@ -1,3 +1,7 @@
+---
+---
+---
+
 # Homework 1 - Predictive Modeling in Finance and Insurance
 
 # By: Dennis Goldenberg
@@ -306,4 +310,4 @@ The closest two observations are 5 and 6. Observation 5 is labeled 'Green' and 6
 
 ### 3d.
 
-We would expect the best value (a.k.a the closest distance)
+If the decision boundary is non-linear, this reflects that the algorithm must produce flexible results. Therefore, we would expect the best value of K in this case to be $\mathbf{small}$, as it takes less points to sway predictions one direction or the other. Therefore, a smaller K would produce a more flexible boundary.
