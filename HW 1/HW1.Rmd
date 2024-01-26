@@ -234,3 +234,45 @@ as.vector(Boston[index,])
 ```
 
 The 399th suburb (value of index) has the lowest median value of owner-occupied homes, at \$5,000. It achieves maximum possible values for the "age" (100% of homes in this suburb were built before 1940), black, and "rad" (accessibility to highways) variables. It has an above average nitric oxide concentration, tax rate, pupil-teacher ratio, non-retail business acre use rate ('indus'), weighted distance to employment centers ('dis'), and percent of inhabitants in lower status ('lstat'). It is below average for number of rooms per dwelling, and has no residential area zoned for lots above 25,000 square feet. It seems like a difficult area to live in.
+
+### 2g.
+
+I calculate the desired quantity by looking at the amounts asked about:
+
+```{r, include = TRUE}
+g7 <- Boston[Boston['rm'] > 7,]
+g8 <- Boston[Boston['rm'] > 8,]
+counts <- c(dim(g7)[1], dim(g8)[1])
+counts
+```
+
+There are $\mathbf{64}$ suburbs that average more than seven rooms per dwelling, and $\mathbf{13}$ that average more than eight rooms per dwelling. I then examine some of the characteristics of these subsets of the data. I first examine the minimum, mean, max, and range for those with more than seven rooms per dwelling:
+
+```{r, include = TRUE}
+mmg7 <- cbind(apply(g7, 2, min), apply(g7, 2, mean),
+                 apply(g7, 2, max))
+mmg72 <- cbind(mmg7, mmg7[,3] - mmg7[,1])
+colnames(mmg72) <- c("Min", "Mean", "Max", "Range")
+mmg72
+```
+
+On average, these suburbs contain lower amounts of the following: crime (and none of the highest crime suburbs have more than 7 rooms per dwelling), proportion of the land set aside for non-residential business, proportion of buildings built pre 1940, pupil-teacher ratio, proportion of lower status people, nitric oxide concentration, accessibility to highways, and tax rate. On the other hand, these suburbs are higher in the following: proportion of land set aside for \>25,000 acre plots, likelihood of bounding the Charles River, variable associated with proportion of the population that is black, and median value of owner occupied homes. Most of these results are in line with more valuable properties being in said suburbs, as the average dwelling is bigger than average among all suburbs. I repeat this for suburbs that average more than 8 rooms per dwelling:
+
+```{r, include = TRUE}
+mmg8 <- cbind(apply(g8, 2, min), apply(g8, 2, mean),
+                 apply(g8, 2, max))
+mmg82 <- cbind(mmg8, mmg8[,3] - mmg8[,1])
+colnames(mmg82) <- c("Min", "Mean", "Max", "Range")
+mmg82
+```
+
+Among these suburbs, certain predictors vary in the same way but to a more extreme amount than those that average more than 7 rooms: on average, crime is even lower, the likelihood of bounding the Charles river is higher, distance to employment centers is even lower, the proportion of lower status people is even lower. Certain predictors vary in the same way but to a less extreme amount: average proportion of land for \>25,000 acre plots, proportion of land, tax rate, the feature corresponding to the proportion of black population, and the proportion of non-retail business acres is greater than global average but not by as much. Similarly, average nitric oxide concentration, pupil-teacher ratio, and accessibility to highways is lower than global average but not by as much. The remaining variables reversed polarity: average distance to employment centers is lower instead of higher and average proportion of pre-1940 building is higher instead of lower.
+
+## 3. KNearestNeighbors
+
+```{r, include = TRUE}
+# create dataset
+
+
+```
+
