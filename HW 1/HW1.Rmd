@@ -271,8 +271,39 @@ Among these suburbs, certain predictors vary in the same way but to a more extre
 ## 3. KNearestNeighbors
 
 ```{r, include = TRUE}
-# create dataset
-
-
+# create data set
+x_1 <- c(0,2,0,0,-1,1,-1)
+x_2 <- c(3,0,1,1,0,1,2)
+x_3 <- c(0,1,3,2,1,1,-1)
+y <- c('Red','Red','Red','Green','Green','Red','Green')
+KNN_data <- as.data.frame(cbind(x_1,x_2,x_3,y))
 ```
 
+### 3a.
+
+To calculate the euclidean distance between each point and $(0,0,0)$, I simply need the square root of the sum of the squared features of each individual observation:
+
+```{r, include = TRUE}
+obs_data <- KNN_data[c('x_1','x_2','x_3')]
+vec_data <- obs_data %>% as.matrix %>% as.numeric
+mdata <- vec_data %>% as.vector
+dim(mdata) <- c(7,3)
+colnames(mdata) <- c('x_1','x_2','x_3')
+sqdist <- mdata^2 %>% rowSums
+dist <- sqdist^(0.5)
+distdata <- as.data.frame(cbind(1:7,dist))
+colnames(distdata) <- c('Obs','dist')
+distdata
+```
+
+### 3b.
+
+The closest observation by Euclidean distance is observation 5. Observation 5 has the label 'Green', so if K = 1, the prediction would be $\textbf{Green}$.
+
+### 3c.
+
+The closest two observations are 5 and 6. Observation 5 is labeled 'Green' and 6 is labeled 'Red'; however, there is a tie for the next closest between observations 2 and 4, which have opposing labels. If the tiebreaker goes to observation 2, then there are two 'Red' labels and one 'Green' label closest to the origin, causing the prediction to be 'Red', but if observation 4 wins the tiebreaker, the prediction would be 'Green'. Consequently, if K = 3, the origin point $\textbf{exists on the decision boundary}$.
+
+### 3d.
+
+We would expect the best value (a.k.a the closest distance)
