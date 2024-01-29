@@ -1,0 +1,18 @@
+---
+title: "HW 2"
+author: "Dennis Goldenberg"
+date: "2024-01-29"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+And I said:
+\begin{equation*}
+S_0 = \sum_{i = 1}^{n}X_i + X_{n + 1}^{n + 1}
+\end{equation*}
+
