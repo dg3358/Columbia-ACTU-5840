@@ -21,6 +21,8 @@ library(magrittr)
 # read in data
 # WNH <- read.csv(file)
 WNH <- read.csv('WiscNursingHome.csv', header = TRUE)
+WNH$CRYEAR <- factor(WNH$CRYEAR)
+WNH <- WNH[WNH$CRYEAR == 2001,]
 ```
 
 
