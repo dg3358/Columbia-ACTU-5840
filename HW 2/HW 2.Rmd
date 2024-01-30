@@ -1,7 +1,7 @@
 ---
-title: "HW 2"
+title: "HW 2 - Predictive Modeling in Finance and Insurance"
 author: "Dennis Goldenberg"
-date: "2024-01-29"
+date: "2024-02-01"
 output: pdf_document
 ---
 
@@ -9,10 +9,73 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# 1. Nursing Home Utilization
 
-And I said:
+```{r echo, include = TRUE}
+# import packages
+library(ggplot2)
+library(magrittr)
+```
+
+```{r, include = TRUE}
+# read in data
+# WNH <- read.csv(file)
+WNH <- read.csv('WiscNursingHome.csv', header = TRUE)
+```
+
+
+## 1a) Estimation of Coefficients
+
+```{r, include = TRUE}
+#Generate variables to analyze
+WNH$LOGTPY <- log(WNH$TPY)
+WNH$LOGNUMBED <- log(WNH$NUMBED)
+```
+
+Using the generated variables, I calculate $x^Tx$, adding in a column for the intercept:
+```{r, include = TRUE}
+x <- cbind(1,WNH$LOGNUMBED)
+xTx <- t(x) %*% x
+xTx
+```
+
+Then, I find $\left(x^Tx\right)^{-1}$:
+
+```{r, include = TRUE}
+xTxInv <- solve(xTx)
+xTxInv
+```
+
+Finally, I find $x^Ty$:
+```{r, include = TRUE}
+y <- WNH$LOGTPY
+xTy <- t(x) %*% y
+xTy
+```
+
+Using the formula for linear regression that $\beta = (x^Tx)^{-1}x^Ty$:
+```{r, include = TRUE}
+beta <- xTxInv %*% xTy
+beta
+```
+
+
+## 1b. The prediction Matrix
+Since $\hat{y} = x\hat{\beta}$, and $\beta = (x^Tx)^{-1}x^Ty$, the prediction matrix $H = x\left(x^Tx\right)^{-1}x^T$, so:
 \begin{equation*}
-S_0 = \sum_{i = 1}^{n}X_i + X_{n + 1}^{n + 1}
+\hat{y} = x(x^Tx)^{-1}x^Ty = Hy
 \end{equation*}
+I find the diagonals of said matrix $H$ and store them in "leverages" variable, as they represent the leverage of each data point; the first 6 outputs are shown below to verify with the Excel document:
+
+```{r, include = TRUE}
+H <- x %*% xTxInv %*% t(x)
+leverages <- diag(H)
+head(leverages)
+```
+
+Since $\hat{y} = Hy$, I calculate and store in the "pred" variable, showing the first 6 predicted values for verification with excel:
+```{r, include = TRUE}
+pred <- H %*% y 
+head(pred)
+```
 
