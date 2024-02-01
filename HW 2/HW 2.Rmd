@@ -102,4 +102,13 @@ Finally, the mean squared error is just the sum of squared error divided by the 
 SSR <- sum((mean(WNH$LOGTPY) - pred)^2)
 SSE <- sum((WNH$LOGTPY - pred)^2)
 SST <- sum((WNH$LOGTPY - mean(WNH$LOGTPY))^2)
+n <- length(WNH$CRYEAR)
+R_2 <- SSR/SST
+R_2_adj <- 1 - (SSE/(n - 2))/(SST/(n - 1))
+F_stat <- (SST - SSE)/(SSE/(n - 2))
+p_reg <- 1 - pf(F_stat, 1, n - 2)
+MSE <- SSE/(n - 2)
+sumStats <- c(R_2, R_2_adj, F_stat, p_reg, MSE)
+names(sumStats) <- c("R^2", "adj. R^2", "F", "p-val", "MSE")
+sumStats
 ```
