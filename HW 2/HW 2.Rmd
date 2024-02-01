@@ -75,9 +75,31 @@ leverages <- diag(H)
 head(leverages)
 ```
 
+## 1c. Making Predictions
+
 Since $\hat{y} = Hy$, I calculate and store in the "pred" variable, showing the first 6 predicted values for verification with excel:
 ```{r, include = TRUE}
 pred <- H %*% y 
 head(pred)
 ```
 
+## 1d. Calculating Summary Statistics
+The $R^2$ value is the proportion of variation explained by the regression. $R^2_{adj}$ is adjusted for the number of predictors; its formula is:
+\begin{equation*}
+R^2_{adj} = 1 - \frac{\frac{SSE}{n - p - 1}}{\frac{SST}{n - 1}} = 1 - \frac{\frac{SSE}{n - 2}}{\frac{SST}{n - 1}}
+\end{equation*}
+Then, the F statistic measures the significance of the regression; its formula is:
+\begin{equation*}
+F_{stat} = \frac{\frac{SST - SSE}{p}}{\frac{SSE}{N - (p + 1)}} = \frac{SST - SSE}{\frac{SSE}{N - 2}}
+\end{equation*}
+The $p$-value is simply the probability that so much variation was observed by a model with no predictive power:
+\begin{equation*}
+p = \mathbb{P}(F \geq F_{stat}), \text{ where } F \sim \text{F-dist}(1,N - 2)
+\end{equation*}
+Finally, the mean squared error is just the sum of squared error divided by the number of degrees of freedom for said error, or $\frac{SSE}{N - 2}$. All are calculated below:
+
+```{r, include = TRUE}
+SSR <- sum((mean(WNH$LOGTPY) - pred)^2)
+SSE <- sum((WNH$LOGTPY - pred)^2)
+SST <- sum((WNH$LOGTPY - mean(WNH$LOGTPY))^2)
+```
