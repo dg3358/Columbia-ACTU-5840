@@ -110,5 +110,88 @@ p_reg <- 1 - pf(F_stat, 1, n - 2)
 MSE <- SSE/(n - 2)
 sumStats <- c(R_2, R_2_adj, F_stat, p_reg, MSE)
 names(sumStats) <- c("R^2", "adj. R^2", "F", "p-val", "MSE")
-sumStats
+t(sumStats)
 ```
+
+## 1e. Calculating Residuals
+
+For observation i, the residual and standard residual have the following formulas:
+\begin{equation*}
+e_i = y - y_i \text{ and } e_{i,std.} = \frac{e_i}{\sqrt{MSE}*\sqrt{1 - h_{ii}}}
+\end{equation*}
+
+I calculate both and print out the first 6 for both:
+```{r, include = TRUE}
+resid <- WNH$LOGTPY - pred
+resid_std <- resid/(sqrt(MSE) * sqrt(1 - leverages))
+f6res <- cbind(head(resid), head(resid_std))
+colnames(f6res) <- c("Residuals", " Std. Residuals")
+f6res
+```
+
+
+## 1f. Hypothesis testing
+The hypotheses to test are:
+\begin{equation*}
+H_0: \beta_1 = 0 \text{ vs. } H_1: \beta_1 \neq 0
+\end{equation*}
+I calculate the t-statistic, or $t = \frac{\hat{\beta}_1}{se\left(\hat{\beta}_1\right)}$, noting that $se\left(\hat{\beta}_1\right) = \sqrt{MSE}*\sqrt{\left(x^Tx\right)^{-1}_{(2,2)}}$:
+```{r, include = TRUE}
+se_beta <- sqrt(MSE) * sqrt(xTxInv[2,2])
+t_stat <- beta[2]/se_beta
+t_stat
+```
+
+Note that $t_{stat} \sim F(ndf = 1, ddf = n - 2)$; therefore, I calculate the p-val of this statistic:
+```{r, include = TRUE}
+p_beta1 <- 1 - pf(t_stat, 1, n - 2)
+p_beta1
+```
+
+Note that $p < 0.05$; thus, the natural log of the number of beds has a statistically significant impact on the natural log of the number of patient years, and we reject $H_0$. Next, the following formula gives the confidence interval for 95\% and 99\% (so $\alpha = 0.05$ and $\alpha = 0.01$ respectively)
+\begin{equation*}
+CI = \left(\hat{\beta}_1 - z^{(1 - \frac{\alpha}{2})}se\left(\hat{\beta}_1\right), \hat{\beta}_1 + z^{1 + \frac{\alpha}{2}}se\left(\hat{\beta}_1\right)\right)
+\end{equation*}
+I code this up and generate it form both significance levels:
+```{r, include = TRUE}
+lCI05 <- beta[2] - qnorm(0.975, 0, 1)*se_beta
+rCI05 <- beta[2] + qnorm(0.975, 0, 1)*se_beta
+lCI01 <- beta[2] - qnorm(0.995, 0, 1)*se_beta
+rCI01 <- beta[2] + qnorm(0.995, 0, 1)*se_beta
+CIMatrix <- matrix(data = c(lCI05,lCI01,rCI05,rCI01), nrow = 2)
+rownames(CIMatrix) <- c("95% conf.", "99% conf.")
+colnames(CIMatrix) <- c("Lower CI", "Upper CI")
+CIMatrix
+```
+
+## 1g. Prediction
+The prediction is $\widehat{\ln(y)} = \hat{\beta_0} + \hat{\beta_1}\ln(x^*)$; the prediction interval is:
+\begin{equation*}
+PI = \left(\hat{y} - z^{(1 - \frac{\alpha}{2})}\sqrt{MSE}\sqrt{1 + \frac{1}{n} + \frac{(x^* - \bar{x})^2}{(n - 1)S_X^2}}, \hat{y} + z^{(1 - \frac{\alpha}{2})}\sqrt{MSE}\sqrt{1 + \frac{1}{n} + \frac{(x^* - \bar{x})^2}{(n - 1)S_X^2}}\right)
+\end{equation*}
+
+I first show the prediction:
+
+```{r, include = TRUE}
+pred100 <- beta[1] + beta[2]*log(100)
+num <- (log(100) - mean(WNH$LOGTPY))^2
+denom <- sum((WNH$LOGTPY - mean(WNH$LOGTPY))^2)
+lpred <- pred100 - qnorm(0.975, 0, 1)*sqrt(MSE)*sqrt(1 + 1/n + num/denom)
+upred <- pred100 + qnorm(0.975, 0, 1)*sqrt(MSE)*sqrt(1 + 1/n + num/denom)
+PIMatrix <- matrix(data = c(lpred, upred), nrow = 1)
+colnames(PIMatrix) <- c("Lower PI", "Upper PI")
+pred100
+```
+
+And now the prediction interval:
+```{r, include = TRUE}
+PIMatrix
+```
+## 1h. Applying Linear Model to check
+I apply a linear model to check all of my results:
+```{r, include = TRUE}
+model <- lm("LOGTPY ~ LOGNUMBED", data = WNH)
+summary(model)
+```
+
+My results match with the model.
