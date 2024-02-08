@@ -92,13 +92,10 @@ library(ggplot2)
 library(readxl)
 ```
 
-
 I first import the data:
-
 
 ```{r, include = TRUE}
 carbData <- read_excel("Table 6.3 Carbohydrate diet-1.xls", skip = 2, sheet = "Sheet1")
-carbData
 ```
 
 
