@@ -11,27 +11,27 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Homework 3 - Predictive Modeling in Finance and Insurance
 
-## 1. Likelihood Function for variance of normal distribution
+## 1. Likelihood Function for mean of normal distribution
 
 ### a. Joint Density Function
 
 Note that $Y_1, Y_2, \text{ and } Y_3$ are independent. Therefore, their joint probability density function (p.d.f) is a product of their marginal probability density functions: 
 \begin{align*}
 f_{(Y_1, Y_2, Y_3)}(y_1, y_2, y_3) &= f_{Y_1}(y_1)f_{Y_2}(y_2)f_{Y_3}(y_3)\\
-&= \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_1 - 700)^2} * \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_2 - 750)^2} *  \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_2 - 850)^2}\\
-&= \frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}*e^{-\frac{1}{2\sigma^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)}
+&= \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_1 - \mu_1)^2} * \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_2 - \mu_2)^2} *  \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_3 - \mu_3)^2}\\
+&= \frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}*e^{-\frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)}
 \end{align*}
 
 ### b. Likelihood function and Log-Likelihood
 
-The likelihood function is just the joint p.d.f, given parameter of interest $\mu$:
+The likelihood function is just the joint p.d.f, given parameter of interest $\overrightarrow{\mu} = (\mu_1,\mu_2,\mu_3)$:
 \begin{equation*}
-L(\mu) = f_{(Y_1, Y_2, Y_3)}(y_1, y_2, y_3;\mu) = \frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}*e^{-\frac{1}{2\sigma^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)}
+L(\overrightarrow{\mu}) = f_{(Y_1, Y_2, Y_3)}(y_1, y_2, y_3;\mu) = \frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}*e^{-\frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)}
 \end{equation*} 
 The log-likelihood is just the natural log of this function: 
 \begin{align*}
-\ell(\sigma^2) = \ln(L(\sigma^2)) &= \ln\left(\frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}\right) + \ln\left(e^{-\frac{1}{2\sigma^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)}\right)\\
-&= -\frac{3}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)
+\ell(\overrightarrow{\mu}) = \ln(L(\sigma^2)) &= \ln\left(\frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}\right) + \ln\left(e^{-\frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)}\right)\\
+&= -\frac{3}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)
 \end{align*}
 
 ### c. Score function, Observed Information, Expected Information
