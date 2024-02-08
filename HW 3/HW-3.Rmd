@@ -1,0 +1,105 @@
+---
+title: "HW-3"
+author: "Dennis Goldenberg"
+date: "2024-02-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Homework 3 - Predictive Modeling in Finance and Insurance
+
+## 1. Likelihood Function for variance of normal distribution
+
+### a. Joint Density Function
+
+Note that $Y_1, Y_2, \text{ and } Y_3$ are independent. Therefore, their joint probability density function (p.d.f) is a product of their marginal probability density functions: 
+\begin{align*}
+f_{(Y_1, Y_2, Y_3)}(y_1, y_2, y_3) &= f_{Y_1}(y_1)f_{Y_2}(y_2)f_{Y_3}(y_3)\\
+&= \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_1 - 700)^2} * \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_2 - 750)^2} *  \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{1}{2\sigma^2}(y_2 - 850)^2}\\
+&= \frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}*e^{-\frac{1}{2\sigma^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)}
+\end{align*}
+
+### b. Likelihood function and Log-Likelihood
+
+The likelihood function is just the joint p.d.f, given parameter of interest $\mu$:
+\begin{equation*}
+L(\mu) = f_{(Y_1, Y_2, Y_3)}(y_1, y_2, y_3;\mu) = \frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}*e^{-\frac{1}{2\sigma^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)}
+\end{equation*} 
+The log-likelihood is just the natural log of this function: 
+\begin{align*}
+\ell(\sigma^2) = \ln(L(\sigma^2)) &= \ln\left(\frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}\right) + \ln\left(e^{-\frac{1}{2\sigma^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)}\right)\\
+&= -\frac{3}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)
+\end{align*}
+
+### c. Score function, Observed Information, Expected Information
+
+The score function is simply the derivative of the log likelihood with respect to the parameter of interest, $\sigma^2$: (I call $\overrightarrow{y}= (y_1, y_2, y_3)$ for simplicity) 
+\begin{align*}
+S(\sigma^2;\overrightarrow{y}) &= \frac{d}{d\sigma^2}\ell(\sigma^2) = -\frac{3}{2\sigma^2} + \frac{1}{2(\sigma^2)^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)
+\end{align*}
+The observed information is simply the second derivative of the log likelihood multiplied by $-1$:
+\begin{align*}
+j(\sigma^2;\overrightarrow{y}) = -\frac{d^2}{d(\sigma^2)^2}\ell(\sigma^2) &= -\left(\frac{3}{2(\sigma^2)^2} - \frac{1}{(\sigma^2)^3}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)\right)\\
+&= - \frac{3}{2(\sigma^2)^2} + \frac{1}{(\sigma^2)^3}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)
+\end{align*}
+
+\newpage
+
+## 2. Fun with Distributions
+
+### a. Distribution of $Y_1^2$
+Since $Y_1 \sim N(0,1)$, $Y_1^2 \sim \chi^2(1)$, or the chi-squared distribution with 1 degree of freedom.
+
+### b. Combination of $Y_1 \text{ and } Y_2$
+Note $\frac{Y_2 - \mu_2}{\sigma_2} = \frac{Y_2 - 3}{2} \sim N(0,1)$; therefore:
+\begin{equation*}
+\left(\frac{Y_2 - 3}{2}\right)^2 \sim \chi^2(1) 
+\end{equation*}
+Using the independence of $Y_1$ and $Y_2$ and Cochran's Theorem:
+\begin{equation*}
+y^Ty = \begin{bmatrix} Y_1 & \frac{Y_2 - 3}{2}\end{bmatrix} * \begin{bmatrix} Y_1 \\ \frac{Y_2 - 3}{2}\end{bmatrix} = Y_1^2 + \left(\frac{Y_2 - 3}{2}\right)^2 = \chi^2(1 + 1) = \chi^2(2)
+\end{equation*}
+So, $y^Ty$ has the chi-squared distribution with 2 degrees of freedom.
+
+### c. Multivariate Normal
+Note that $V$ in this case is the Variance-Covariance matrix. Since $Y_1$ and $Y_2$ are independent, the off-diagonal elements, which represent covariance, are 0. There diagonal elements are just $\sigma_1^2 = 1$ and $\sigma_2^2 = 4$, respectively, so:
+\begin{equation*}
+V = \begin{bmatrix} 1 & 0 \\ 0 & 4\end{bmatrix}
+\end{equation*}
+I find the inverse of this 2 by 2 matrix:
+\begin{equation*}
+V^{-1} = \frac{1}{1(4) - 0(0)}\begin{bmatrix} 4 & 0 \\ 0 & 1\end{bmatrix} = \begin{bmatrix} 1 & 0 \\ 0 & \frac{1}{4}\end{bmatrix}
+\end{equation*}
+Therefore:
+\begin{align*}
+y^TV^{-1}y &= \begin{bmatrix} Y_1 & Y_2\end{bmatrix}* \begin{bmatrix} 1 & 0 \\ 0 & \frac{1}{4}\end{bmatrix} * \begin{bmatrix} Y_1 \\ Y_2\end{bmatrix}\\
+&= \begin{bmatrix} Y_1 & \frac{Y_2}{4}\end{bmatrix}*\begin{bmatrix} Y_1 \\ Y_2\end{bmatrix}\\
+&= Y_1^2 + \left(\frac{Y_2}{2}\right)^2
+\end{align*}
+
+\newpage
+
+\newpage
+
+# 4. Linear Regression
+
+## a. Fitting model B
+```{r, include = TRUE}
+library(ggplot2)
+library(readxl)
+```
+
+
+I first import the data:
+
+
+```{r, include = TRUE}
+carbData <- read_excel("Table 6.3 Carbohydrate diet-1.xls", skip = 2, sheet = "Sheet1")
+carbData
+```
+
+
+
