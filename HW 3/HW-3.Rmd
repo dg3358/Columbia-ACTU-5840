@@ -30,22 +30,38 @@ L(\overrightarrow{\mu}) = f_{(Y_1, Y_2, Y_3)}(y_1, y_2, y_3;\mu) = \frac{1}{\lef
 \end{equation*} 
 The log-likelihood is just the natural log of this function: 
 \begin{align*}
-\ell(\overrightarrow{\mu}) = \ln(L(\sigma^2)) &= \ln\left(\frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}\right) + \ln\left(e^{-\frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)}\right)\\
+\ell(\overrightarrow{\mu}) = \ln(L(\mu)) &= \ln\left(\frac{1}{\left(2\pi\sigma^2\right)^{\frac{3}{2}}}\right) + \ln\left(e^{-\frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)}\right)\\
 &= -\frac{3}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)
 \end{align*}
 
 ### c. Score function, Observed Information, Expected Information
 
-The score function is simply the derivative of the log likelihood with respect to the parameter of interest, $\sigma^2$: (I call $\overrightarrow{y}= (y_1, y_2, y_3)$ for simplicity) 
+The score function is simply the derivative of the log likelihood with respect to the parameter of interest, $\overrightarrow{\mu}$. Note that the function is actually a matrix, as I takt the derivative with respect to $\mu_1$, $\mu_2$, and $\mu_3$:
 \begin{align*}
-S(\sigma^2;\overrightarrow{y}) &= \frac{d}{d\sigma^2}\ell(\sigma^2) = -\frac{3}{2\sigma^2} + \frac{1}{2(\sigma^2)^2}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)
-\end{align*}
-The observed information is simply the second derivative of the log likelihood multiplied by $-1$:
-\begin{align*}
-j(\sigma^2;\overrightarrow{y}) = -\frac{d^2}{d(\sigma^2)^2}\ell(\sigma^2) &= -\left(\frac{3}{2(\sigma^2)^2} - \frac{1}{(\sigma^2)^3}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)\right)\\
-&= - \frac{3}{2(\sigma^2)^2} + \frac{1}{(\sigma^2)^3}\left((y_1 - 700)^2 + (y_2 - 750)^2 + (y_3 - 850)^2\right)
+S(\overrightarrow{\mu}) &= \frac{d}{d\mu}\ell(\mu) = \begin{bmatrix} \frac{d}{d\mu_1}\left(-\frac{3}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)\right)\\
+\frac{d}{d\mu_2}\left(-\frac{3}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)\right)\\
+\frac{d}{d\mu_3}\left(-\frac{3}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\left(\sum_{i = 1}^{3}(y_i - \mu_i)^2\right)\right)
+\end{bmatrix} = \begin{bmatrix} \frac{y_1 - \mu_1}{\sigma^2} \\ \frac{y_2 - \mu_2}{\sigma^2} \\ \frac{y_3 - \mu_3}{\sigma^2}\end{bmatrix}
 \end{align*}
 
+Note that the observed information matrix is a matrix of second derivatives of the log-likelihood function. Since we have 3 variables to differentiate with respect to, it is a 3 $\times$ 3 matrix, multiplied by -1:
+\begin{align*}
+j(\overrightarrow{\mu};Y) = -1 * \begin{bmatrix} \frac{d^2\ell(\mu)}{d\mu_1^2} & \frac{d^2\ell(\mu)}{d\mu_2d\mu_1} & \frac{d^2\ell(\mu)}{d\mu_3d\mu_1}\\
+\frac{d^2\ell(\mu)}{d\mu_1d\mu_2} & \frac{d^2\ell(\mu)}{d\mu_2^2} & \frac{d^2\ell(\mu)}{d\mu_3d\mu_2}\\
+ \frac{d^2\ell(\mu)}{d\mu_1d\mu_3} & \frac{d^2\ell(\mu)}{d\mu_2d\mu_3} & \frac{d^2\ell(\mu)}{d\mu_3^2}\end{bmatrix} = \begin{bmatrix} \frac{1}{\sigma^2} & \frac{1}{\sigma^2} & \frac{1}{\sigma^2}\\
+ \frac{1}{\sigma^2} & \frac{1}{\sigma^2} & \frac{1}{\sigma^2}\\
+ \frac{1}{\sigma^2} & \frac{1}{\sigma^2} & \frac{1}{\sigma^2}
+ \end{bmatrix} = \frac{1}{\sigma^2}\mathbf{1}_{3 \times 3}
+\end{align*}
+
+The expected information matrix is simply the expectation with respect to our observations of our observed information matrix:
+\begin{equation*}
+i(\overrightarrow{\mu}) = \mathbb{E}[j(\overrightarrow{\mu};Y)] = \frac{1}{\sigma^2}\mathbb{E}\left[\mathbf{1}_{3 \times 3}\right] = \frac{1}{\sigma^2}\mathbf{1}_{3 \times 3}
+\end{equation*}
+Given the observations, these matrices take on the values:
+\begin{equation*}
+S(\overrightarrow{\mu};Y) =\begin{bmatrix} \frac{4}{\sigma^2} & \frac{6.5}{\sigma^2} & \frac{5}{\sigma^2}\end{bmatrix}^{T} \text{ and } i(\overrightarrow{\mu}) = j(\overrightarrow{\mu};Y) = \frac{1}{\sigma^2}\mathbf{1}_{3 \times 3}
+\end{equation*}
 \newpage
 
 ## 2. Fun with Distributions
