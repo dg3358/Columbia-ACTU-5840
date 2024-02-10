@@ -254,26 +254,32 @@ My test statistic and decision boundary is:
 \begin{equation*}
 F_{stat} = \frac{SSE_{full} - SSE_{reduced}}{2 * s^2} \sim \text{F-dist}(ndf = 2, ddf = N - 4) \text{ and } \mathbb{P}(F \geq F_{stat}) \leq 0.05
 \end{equation*}
-If, under $H_0$, there is less than a 5\% chance that a value in this F-distribution exceeds the generated f-statistic, I reject $H_0$ and say that the two variables are jointly statistically significant. To get all of the values, I run the reduced model (without $PE$ and $lnH$), get the SSE's, and calculate the F-stat (note that the SST calculation is trickier due to the fact that I have different observations ommitted due to missingness):
+If, under $H_0$, there is less than a 5\% chance that a value in this F-distribution exceeds the generated f-statistic, I reject $H_0$ and say that the two variables are jointly statistically significant. To get all of the values, I run the reduced model (without $PE$ and $lnH$), get the SSE's, and calculate the F-stat (note that the observations are less due to the fact that I am only dealing with the cases):
 
 ```{r, include = TRUE}
-#reg_UN_red <- lm("LIFEEXP ~ FERTILITY", data = UN_data)
-#SST_UN <- var(UN_data$LIFEEXP)*(n_UN - 1)
-#SSE_full_UN <- SST_UN * (1 - summary(reg_UN)$r.squared)
-#SSE_reduced_UN <- SST_UN * (1 - summary(reg_UN_red)$r.squared)
-#MSE_UN <- (summary(reg_UN)$sigma)^2
-#F_stat_UN <- (SSE_reduced_UN - SSE_full_UN)/(2*MSE_UN)
-#F_stat_UN
-#attributes(summary(reg_UN_red))
-#summary(reg_UN_red)$df
-#summary(reg_UN)$df
-#summary(reg_UN_red)
+comp_UN_data <- subset(UN_data,complete.cases(PUBLICEDUCATION,
+                                              PRIVATEHEALTH,
+                                              FERTILITY))
+reg_UN_red <- lm("LIFEEXP ~ FERTILITY", data = comp_UN_data)
+n_UN_comp <- dim(comp_UN_data)[1]
+SST_UN <- var(UN_data$LIFEEXP)*(n_UN_comp - 1)
+SSE_full_UN <- SST_UN * (1 - summary(reg_UN)$r.squared)
+SSE_reduced_UN <- SST_UN * (1 - summary(reg_UN_red)$r.squared)
+MSE_UN <- (summary(reg_UN)$sigma)^2
+F_stat_UN <- (SSE_reduced_UN - SSE_full_UN)/(2*MSE_UN)
+F_stat_UN
 ```
 
-Then, I calculate the p-value of this F_stat...
+Then, I calculate the p-value of this F_stat:
+```{r, include = TRUE}
+pf(F_stat_UN, df1 = 2, df2 = n_UN_comp - 4, lower.tail = FALSE)
+```
+This p-value $0.4679 > 0.05$, so I fail to reject $H_0$; it seems as though these variables are not statistically significant.
+
+\newpage
 
 ### b. Generating Box Plot
-I turn region into a categorical variable, and then generate the boxplot:
+I turn region into a categorical variable, and then generate the box plot:
 ```{r, include = TRUE}
 UN_data$REGION <- factor(UN_data$REGION, levels = 1:8, ordered = TRUE)
 RegionLabels <- c("Arab States", "East Asia", "S. America", "S. Asia", 
@@ -288,4 +294,34 @@ ggplot(UN_data) + geom_boxplot(aes(x = REGION, y = LIFEEXP)) +
 
 Here, most regions hover in the 65-70 range for mean life expectancy, but Sub-Saharan Africa and South Asia are particularly low in terms of life expectancy, with High-Income OECE countries being particularly high.
 
+\newpage
+
 ### c. Regression Model with Region
+I first fit the regression model, using the complete data:
+```{r, include = TRUE}
+region_reg_UN <- 
+lm("LIFEEXP ~ FERTILITY + PUBLICEDUCATION + log(PRIVATEHEALTH) + factor(REGION)",
+    data = comp_UN_data)
+summary(region_reg_UN)
+```
+
+\textbf{i.} I get a prediction for the given new observation for both an Arab State and Sub-Saharan Africa:
+```{r, include = TRUE}
+predict_frame <- data.frame(t(cbind(c(2,5,exp(1),1),c(2,5,exp(1),6))))
+colnames(predict_frame) <- c("FERTILITY", "PUBLICEDUCATION",
+                             "PRIVATEHEALTH", "REGION")
+predictions <- predict.lm(region_reg_UN, newdata = predict_frame)
+names(predictions) <- c("Arab State", "Sub-Saharan Africa")
+predictions
+```
+
+\textbf{ii.} Since the Arab State is region 1, the coefficient $\text{factor(REGION)6}$, corresponding to Sub-Saharan Africa, is the estimate for the difference in life expectancy relative to an Arab State. I use $z_{(1 + .95)/2} = 1.96$, and discover that the confidence interval is:
+\begin{align*}
+\hat{\beta}_{\text{REGION6}} \pm 1.96 * se\left(\hat{\beta}_{\text{REGION6}}\right) = -14.3567 \pm 1.96 * 1.8663 = (-18.014648, -10.698752)
+\end{align*}
+
+\textbf{iii.} Note that $\beta_{\text{factor(REGION)6}}$ corresponds to the estimate for the difference in life expectancy for a Sub-Saharan African state relative to an Arab State, and $\beta_{\text{factor(REGION)8}}$ estimate for the difference in life expectancy for a high-income OECD state relative to an Arab State. So to find the point estimate for the difference between life expectancies between a high-income country and Sub-Saharan African state, I subtract the two:
+\begin{equation*}
+\beta_{\text{factor(REGION)8}} - \beta_{\text{factor(REGION)6}} = 3.8319 - (-14.3567) = \mathbf{18.1886}
+\end{equation*}
+So, all else equal, the model predicts a high income OECD country to have a life expectancy $\mathbf{18.1886}$ years longer than a sub-Saharan African state.
