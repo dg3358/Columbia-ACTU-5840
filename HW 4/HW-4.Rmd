@@ -1,0 +1,26 @@
+---
+title: "HW-4"
+author: "Dennis Goldenberg"
+date: "2024-02-15"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Homework 4 - Predictive Modeling in Finance and Insurance
+
+## 1. ANOVE, one factor
+
+\newpage
+
+## 2. ANOVA, two factor (unblanaced)
+
+\newpage
+
+## 3. One-factor ANOVA
+
+\newpage
+
+## 4. National Life Expectancies
