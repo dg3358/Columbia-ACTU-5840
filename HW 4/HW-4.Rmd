@@ -11,12 +11,98 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Homework 4 - Predictive Modeling in Finance and Insurance
 
-## 1. ANOVE, one factor
+```{r, include = TRUE}
+library(ggplot2)
+library(readxl)
+#library(dplyr)
+```
+
+## 1. ANOVA, one factor
+```{r, include = TRUE}
+#read in data, remove empty column
+phosData <- read_excel("Table 6.19-PlasmaPhosphate-1.xls", skip = 2, 
+                       sheet = "Sheet1", .name_repair = "unique_quiet")
+phosData <- phosData[1:12, 1:3]
+colnames(phosData) <- c("H_O","N_O", "C")
+```
+
+### a. Test of difference of means
+Our hypotheses are as follows:
+
+$
+\begin{equation*}
+H_0: \mu_{H_O} = \mu_{N_O} = \mu_{C} \text{ and } H_a: \text{ at least one different}
+\end{equation*} 
+$
+
+
+To test, I first calculate the means $\bar{x}_{H_O}, \bar{x}_{N_O}, \bar{x}_C$. There are 3 levels, so 2 degrees of freedom between sum of squares, and $n - 3$ degrees of freedom in the error sum of squares. I calculate the mean sum of squares for both and generate the F-statistic:
+```{r, include = TRUE}
+means <- colMeans(phosData, na.rm = TRUE)
+oMean <- sum(phosData, na.rm = TRUE)/sum(!is.na(phosData))
+MSE <- 0
+MSB <- 0
+for (i in colnames(phosData)) {
+  MSE <- MSE + sum((phosData[,i] - means[i])^2, na.rm = TRUE)
+  MSB <- MSB + sum(!is.na(phosData[,i]))*((means[i] - oMean)^2)
+}
+MSE <- MSE/(sum(!is.na(phosData)) - (dim(phosData)[2]))
+MSB <- unname(MSB/(dim(phosData)[2] - 1))
+sprintf("Test statistic: %f", MSB/MSE)
+```
+
+I then calculate the p-value of this statistic, using $ndf = 2 \text{ and } ddf = n - 3$ for the test statistic:
+```{r, include = TRUE}
+p_1a <- pf(MSB/MSE, df1 = dim(phosData)[2] - 1, 
+   df2 = sum(!is.na(phosData)) - (dim(phosData)[2]), lower.tail = F)
+sprintf("p value: %f", p_1a)
+```
+
+Note that $p_{1a} < 0.05$, meaning we have \textbf{enough evidence to reject} $H_0$; there is evidence that the means for different treatments provide different results.
+
+### 1b. 95% confidence interval, difference of means
+Normality is assumed; therefore, given that the estimate of $\mu_{H-O} - \mu_{N-O} = \bar{x}_{H-O} - \bar{x_{N-O}}$, the bounds for the confidence interval are:
+$
+\begin{equation*}
+\bar{x}_{H_O} - \bar{x}_{N_O} \pm z_{.975}\hat{\text{SE}}(\bar{x}_{H_O} - \bar{x_{N_O}}) = \bar{x}_{H_O} - \bar{x_{N_O}} \pm 1.96*S_P\sqrt{\frac{1}{n_{H_O}} + \frac{1}{n_{N_O}}}
+\end{equation*}
+$
+Here, the pooled sample variance is $S_P = \sqrt{\frac{(n_{H_O} - 1)s_{H_O}^2 + (n_{N_O} - 1)s_{N_O}^2}{n_{H_O} + n_{N_O} - 2}}$. I thus calculate the lower and upper bound:
+
+```{r, include = TRUE}
+n_HO <- sum(!is.na(phosData[,"H_O"]))
+n_NO <- sum(!is.na(phosData[,"N_O"]))
+S_P <- sqrt(((n_HO - 1)*var(phosData$H_O, na.rm = TRUE) 
+             + (n_NO - 1)*var(phosData$N_O, na.rm = TRUE))/
+              (n_HO + n_NO - 2))
+LCI <- unname(means["H_O"] - means["N_O"])[1] - 1.96*S_P*sqrt(1/n_HO + 1/n_NO)
+UCI <- unname(means["H_O"] - means["N_O"])[1] + 1.96*S_P*sqrt(1/n_HO + 1/n_NO)
+diffMeansconf <- c(LCI, UCI)
+names(diffMeansconf) <- c("Lower Bound", "Upper Bound")
+diffMeansconf
+```
+
+### 1c. Standard Residual Plot
 
 \newpage
 
 ## 2. ANOVA, two factor (unblanaced)
+First, I read in the data and turn the explanatory variables into factors:
+```{r, include = TRUE}
+facData <- read_excel("Table 6.21-Unbalanced data-1.xls", skip = 2, 
+                       sheet = "Sheet1", .name_repair = "unique_quiet")
+facData$factorA <- factor(facData$factorA)
+facData$factorB <- factor(facData$factorB)
+colnames(facData)
+```
 
+### 2a. Testing for interaction effects
+I run the linear model that includes interactions:
+```{r, include = TRUE}
+lm2_inter <- lm("data ~ factorA + factorB + factorA*factorB", data = facData)
+lm2_noInter <- lm("data ~ factorA + factorB", data = facData)
+summary(lm2_noInter)
+```
 \newpage
 
 ## 3. One-factor ANOVA
