@@ -29,11 +29,9 @@ colnames(phosData) <- c("H_O","N_O", "C")
 ### a. Test of difference of means
 Our hypotheses are as follows:
 
-$
-\begin{equation*}
+$$
 H_0: \mu_{H_O} = \mu_{N_O} = \mu_{C} \text{ and } H_a: \text{ at least one different}
-\end{equation*} 
-$
+$$
 
 
 To test, I first calculate the means $\bar{x}_{H_O}, \bar{x}_{N_O}, \bar{x}_C$. There are 3 levels, so 2 degrees of freedom between sum of squares, and $n - 3$ degrees of freedom in the error sum of squares. I calculate the mean sum of squares for both and generate the F-statistic:
@@ -62,11 +60,10 @@ Note that $p_{1a} < 0.05$, meaning we have \textbf{enough evidence to reject} $H
 
 ### 1b. 95% confidence interval, difference of means
 Normality is assumed; therefore, given that the estimate of $\mu_{H-O} - \mu_{N-O} = \bar{x}_{H-O} - \bar{x_{N-O}}$, the bounds for the confidence interval are:
-$
-\begin{equation*}
+$$
 \bar{x}_{H_O} - \bar{x}_{N_O} \pm z_{.975}\hat{\text{SE}}(\bar{x}_{H_O} - \bar{x_{N_O}}) = \bar{x}_{H_O} - \bar{x_{N_O}} \pm 1.96*S_P\sqrt{\frac{1}{n_{H_O}} + \frac{1}{n_{N_O}}}
-\end{equation*}
-$
+$$
+
 Here, the pooled sample variance is $S_P = \sqrt{\frac{(n_{H_O} - 1)s_{H_O}^2 + (n_{N_O} - 1)s_{N_O}^2}{n_{H_O} + n_{N_O} - 2}}$. I thus calculate the lower and upper bound:
 
 ```{r, include = TRUE}
