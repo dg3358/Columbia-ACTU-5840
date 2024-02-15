@@ -13,8 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include = TRUE}
 library(ggplot2)
+library(patchwork)
 library(readxl)
-#library(dplyr)
 ```
 
 ## 1. ANOVA, one factor
@@ -238,3 +238,186 @@ The test statistic and p-value correspond to testing $H_0: \mu_C = \mu_{NO} = \m
 
 
 ## 4. National Life Expectancies
+
+### 4a. Logarithmic transforms
+I first read in data, and check where it is complete:
+```{r, include = TRUE}
+UNData <- read.csv("UNLifeExpectancy-4.csv", header = TRUE)
+compData <- subset(UNData,complete.cases(PUBLICEDUCATION,
+PRIVATEHEALTH,
+FERTILITY,
+GDP,
+LIFEEXP))
+```
+
+Then, I plot what is desired:
+```{r, include = TRUE, fig.align = 'center'}
+gdPlot <- ggplot(data = compData) + geom_point(aes(x = GDP, y = LIFEEXP)) +
+  ggtitle("Life Expectancy vs. GDP of Countries") +
+  ylab("Life Expectancy") + theme(plot.title = element_text(hjust = 0.5, size = 10)) 
+phPlot <- ggplot(data = compData) + geom_point(aes(x = PRIVATEHEALTH, y= LIFEEXP)) +
+  ggtitle("Life Expectancy vs. Private Health Expenditure") +
+  xlab("Private Health Expense") + ylab("Life Expectancy") +
+  theme(plot.title = element_text(hjust = 0.5, size = 10))
+gdPlot + phPlot
+```
+
+Note that neither GDP nor Private Health Expenditures appear linearly related with Life Expectancy. There seems to be a relationship, but both are concentrated on the lower ends of their ranges, suggesting that taking the log of both of these variables may make the resulting relationship with life expectancy more linear. I do this in the plots below:
+```{r, include = TRUE, fig.align = 'center'}
+compData$lnHEALTH <- log(compData$PRIVATEHEALTH)
+compData$lnGDP <- log(compData$GDP)
+lngdPlot <- ggplot(data = compData) + geom_point(aes(x = lnGDP, y = LIFEEXP)) +
+  ggtitle("Life Expectancy vs. GDP of Countries") + xlab("ln(GDP)") + 
+  ylab("Life Expectancy") + theme(plot.title = element_text(hjust = 0.5, size = 10)) 
+lnphPlot <- ggplot(data = compData) + geom_point(aes(x = lnHEALTH, y= LIFEEXP)) +
+  ggtitle("Life Expectancy vs. Private Health Expenditure") +
+  xlab("ln(Private Health Expense)") + ylab("Life Expectancy") +
+  theme(plot.title = element_text(hjust = 0.5, size = 10))
+lngdPlot + lnphPlot
+```
+
+\newpage
+
+### 4b. Regression, Standard Residuals, and Leverage
+I return to the original dataset and run the regression requested:
+```{r, include = TRUE}
+unReg <- lm("LIFEEXP ~ FERTILITY + PUBLICEDUCATION + log(PRIVATEHEALTH)",
+            data = UNData)
+```
+
+#### 4b(i). Plots of Standardized residuals
+- I plot the standardized residuals against the observation index (the observation indices correspond to the subset of data that is complete) as well as against the normal probability plot:
+```{r, include = TRUE, out.height = '45%', out.width = '45%', fig.align='center'}
+std_resid_UN <- rstandard(unReg)
+resid_table_UN <- data.frame(cbind(1:length(std_resid_UN), std_resid_UN))
+colnames(resid_table_UN) <- c("Index", "std_resid")
+ggplot(data = resid_table_UN) + geom_point(aes(Index, std_resid)) + 
+  ylab("Standardized Residuals") + xlab("Observation Index") + 
+  ggtitle("Standard Residuals (UN) vs. Observation Index") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Then, I plot it against the standard normal distribution:
+```{r, include = TRUE, out.height = '45%', out.width = '45%', fig.align = 'center'}
+qqnorm(y = std_resid_UN, ylab = "Standardized Residuals (UN)",
+       xlab = "Theoretical Quantiles", 
+       main = "Standardized Residuals vs. N(0,1)")
+qqline(y = std_resid_UN)
+```
+
+There may be some evidence that the residuals aren't quite normal, systematically undershooting the qqline at the extremes and overshooting near the center.
+
+\newpage
+
+#### 4b(ii). Identifying all outliers
+- I use the method described in the text to find the indices of the outliers (indices correspond to original data set, not truncated complete data set):
+```{r, include = TRUE}
+outliers <- std_resid_UN > 3 | std_resid_UN < -3
+outliers <- which(outliers == TRUE)
+names(outliers)
+```
+
+So observations 95, 159, and 185 are outliers.
+
+#### 4b(iii). Providing a Plot for Leverage
+- I provide a leverage plot (the observation indices correspond to the subset of data that is complete):
+```{r, include = TRUE, out.width = '50%', out.height = '50%', fig.align='center'}
+leverage <- hatvalues(unReg)
+hat_matrix <- data.frame(cbind(1:length(leverage),leverage))
+colnames(hat_matrix) <- c("Index", "Leverage")
+ggplot(data = hat_matrix) + geom_point(aes(Index, Leverage)) + 
+  ylab("Leverage") + xlab("Observation Index") + 
+  ggtitle("Leverage vs. Observation Index") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+#### 4b(iv). Finding high leverage points
+- Note that $\bar{h} = \frac{p + 1}{N} = \frac{4}{152} = \frac{1}{38}$. Via the formula provided in the homework, I look for where $h_{ii} > 3 * \bar{h} = \frac{3}{38}$:
+```{r, include = TRUE}
+high_leverage <- leverage > (3/38)
+high_leverage <- which(high_leverage == TRUE)
+names(high_leverage)
+```
+So observations 4, 53, 95, 152, and 183 (indices from original data set) are high leverage.
+
+#### 4b(v). Finding intersection between high leverage, outlier
+- Observation 95, which corresponds to the country of $\textbf{Lesotho}$, is both a high leverage point and an outlier. In the truncated data, this corresponds to observation 79. I find the cook's distance of this point:
+```{r, include = TRUE}
+index_trunc <- unname(high_leverage["95"])
+sprintf("Lesotho Cook's Distance: %f",
+        unname(cooks.distance(unReg)[index_trunc]))
+```
+The formula for Cook's distance is:
+$$
+D_i = \left(\frac{e_i}{s\sqrt{1 - h_{ii}}}\right)^2 * \frac{h_{ii}}{(p + 1)(1 - h_{ii})}
+$$
+Therefore, I calculate the proportion of cook's distance from both the standardized residual and leverage:
+```{r, include = TRUE}
+cooks_resid <- unname((unReg$residuals[index_trunc])/
+  (summary(unReg)$sigma *sqrt(1 - leverage[index_trunc])))
+cooks_leverage <- unname(leverage[index_trunc]/
+                           ((3 + 1)*(1 - leverage[index_trunc])))
+sprintf("From Outlier: %f", cooks_resid^2)
+sprintf("From High Leverage: %f", cooks_leverage)
+```
+If I combine these together, I get back the original cook's distance:
+```{r, include = TRUE}
+sprintf("Cook's Distance: %f", cooks_resid^2 * cooks_leverage)
+```
+
+\newpage
+
+### 4c. Variance Inflation Factor (VIF)
+
+#### 4c(i). Explanation of Collinearity and a Variance Inflation Factor
+- $\textbf{Collinearity}$ occurs when two explanatory variables exhibit a high correlation with one another, either positive or negative. Because of the variables' shared movement, slight alterations to data can cause significant swings in coefficients, as drastically different combinations of these two variables can cause similar results. This increases the variance of the linear model and its parameters. The $\textbf{Variance Inflation Factor}$, or VIF, is a variable-specific measure of the scale of this increased variance introduced by a particular variable due to its collinearity with all other variables; it is a function of the $R^2$ coefficient obtained when running a regression of a particular explanatory variable using all other explanatory variables as predictors.
+
+#### 4c(ii). What constitutes a large VIF?
+- A VIF of $\textbf{10 or higher}$ constitutes a large VIF for a particular explanatory variable.
+
+#### 4c(iii). Getting $VIF_{lnHEALTH}$
+- The formula is $VIF_{lnHEALTH} = \frac{1}{1 - R^2_{lnHEALTH}}$. I run the model to obtain the $R^2$:
+```{r, include = TRUE}
+lm4c_lnHEALTH <- lm("log(PRIVATEHEALTH) ~ FERTILITY + PUBLICEDUCATION",
+                    data = UNData)
+
+sprintf("R^2 of lnHEALTH: %f", summary(lm4c_lnHEALTH)$r.squared)
+```
+
+From this, I calculate the VIF:
+```{r, include = TRUE}
+VIF_lnHEALTH <- 1/(1 - summary(lm4c_lnHEALTH)$r.squared)
+sprintf("VIF of lnHEALTH: %f", VIF_lnHEALTH)
+```
+
+#### 4c(iv). Calculating all VIF's without rerunning regression
+- I use the following formula:
+$$
+VIF_{x_j} = se\left(\hat{\beta}_j\right)^2* \frac{s_{x_j}^2 * (N - 1)}{s^2}
+$$
+This formula is implemented below:
+```{r, include = TRUE}
+compForVAR <- subset(UNData,complete.cases(PUBLICEDUCATION,PRIVATEHEALTH,
+                                           FERTILITY, LIFEEXP))
+compForVAR$lnHEALTH <- log(compForVAR$PRIVATEHEALTH)
+bigN <- dim(compForVAR)[1]
+
+#For lnHEALTH
+sigmasq_lnHEALTH <- unname(diag(vcov(unReg))["log(PRIVATEHEALTH)"])
+VIF_lnHEALTH <- sigmasq_lnHEALTH * var(compForVAR$lnHEALTH) * (bigN - 1)/
+  summary(unReg)$sigma^2
+
+#For Fertility
+sigmasq_Fertility <- unname(diag(vcov(unReg))["FERTILITY"])
+VIF_Fertility <- sigmasq_Fertility * var(compForVAR$FERTILITY) * (bigN - 1)/
+  summary(unReg)$sigma^2
+
+# For Public Education
+sigma_sq_PE <- unname(diag(vcov(unReg))["PUBLICEDUCATION"])
+VIF_PE <- sigma_sq_PE * var(compForVAR$PUBLICEDUCATION) * (bigN - 1)/
+  summary(unReg)$sigma^2
+
+VIFs <- c(VIF_Fertility, VIF_PE, VIF_lnHEALTH)
+names(VIFs) <- c("Fertility VIF", "Public Ed. VIF", "ln(HEALTH) VIF")
+VIFs
+```
