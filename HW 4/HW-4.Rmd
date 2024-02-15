@@ -61,7 +61,7 @@ Note that $p_{1a} < 0.05$, meaning we have \textbf{enough evidence to reject} $H
 ### 1b. 95% confidence interval, difference of means
 Normality is assumed; therefore, given that the estimate of $\mu_{H-O} - \mu_{N-O} = \bar{x}_{H-O} - \bar{x_{N-O}}$, the bounds for the confidence interval are:
 $$
-\bar{x}_{H_O} - \bar{x}_{N_O} \pm z_{.975}\hat{\text{SE}}(\bar{x}_{H_O} - \bar{x_{N_O}}) = \bar{x}_{H_O} - \bar{x_{N_O}} \pm 1.96*S_P\sqrt{\frac{1}{n_{H_O}} + \frac{1}{n_{N_O}}}
+\bar{x}_{H_O} - \bar{x}_{N_O} \pm z_{.975}\hat{\text{SE}}(\bar{x}_{H_O} - \bar{x_{N_O}}) = \bar{x}_{H_O} - \bar{x}_{N_O} \pm 1.96*S_P\sqrt{\frac{1}{n_{H_O}} + \frac{1}{n_{N_O}}}
 $$
 
 Here, the pooled sample variance is $S_P = \sqrt{\frac{(n_{H_O} - 1)s_{H_O}^2 + (n_{N_O} - 1)s_{N_O}^2}{n_{H_O} + n_{N_O} - 2}}$. I thus calculate the lower and upper bound:
@@ -80,6 +80,34 @@ diffMeansconf
 ```
 
 ### 1c. Standard Residual Plot
+I reread the data into a different format, time one column for group and one column for phosphate count for simplicity in implementation to the model:
+```{r, include = TRUE}
+phosDataC <- phosData <- read_excel("Table 6.19-PlasmaPhosphate-1.xls", 
+                        skip = 2, sheet = "Sheet1", 
+                        range = cell_cols("E:F"), .name_repair = "unique_quiet")
+phosDataC$Group <- factor(phosDataC$Group)
+lm_1c <- lm("phosphate ~ factor(Group)", data = phosDataC)
+```
+
+Then, I plot the standardized residuals against observation index:
+```{r, include = TRUE, out.width = "70%", out.height="70%", fig.align = 'center'}
+std_resid <- rstandard(lm_1c)
+resid_table <- data.frame(cbind(1:length(std_resid), std_resid))
+colnames(resid_table) <- c("Index", "std_resid")
+ggplot(data = resid_table) + geom_point(aes(x = Index, y = std_resid)) +
+  ylab("Standardized Residuals") + xlab("Observation Index") + 
+  ggtitle("Standardized residuals against Observation Index") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Then, I produce a normal probability plot:
+```{r, include = TRUE, out.width = "70%", out.height="70%", fig.align = 'center'}
+qqnorm(y = std_resid, ylab = "Standardized Residuals",
+       xlab = "Theoretical Quantiles", 
+       main = "Standardized Residuals vs. N(0,1)")
+qqline(y = std_resid)
+```
+Note that the fit is very good, with the exception of the 1st observation, having a standardized residual of almost $-3$. Thus, it can be concluded that the residuals are approximately normal.
 
 \newpage
 
@@ -90,20 +118,123 @@ facData <- read_excel("Table 6.21-Unbalanced data-1.xls", skip = 2,
                        sheet = "Sheet1", .name_repair = "unique_quiet")
 facData$factorA <- factor(facData$factorA)
 facData$factorB <- factor(facData$factorB)
-colnames(facData)
 ```
 
 ### 2a. Testing for interaction effects
-I run the linear model that includes interactions:
+Note that factor A has 3 levels, and factor B has 2 levels; therefore, there will be $(3 - 1)(2 - 1) = 2$ coefficients corresponding to interaction effects in a full model. Assuming $A1$ and $B1$ as our reference groups, our hypotheses are:
+$$
+H_0: \beta_{\text{AA2BB2}} = \beta_{\text{AA3BB2}} = 0 \text{ (no interaction)} \text{ and } H_a: \text{at least one } \beta_{\text{AB}} \neq 0
+$$
+
+I run the linear model that includes interactions and the model without interactions:
 ```{r, include = TRUE}
 lm2_inter <- lm("data ~ factorA + factorB + factorA*factorB", data = facData)
 lm2_noInter <- lm("data ~ factorA + factorB", data = facData)
-summary(lm2_noInter)
 ```
+These models are nested, and there are $2$ coefficients being tested. Thus, in the $F$ statistic, there are 2 degrees of freedom in the numerator and $10 - 2 - (2 + 1 + 1) = 4$ in the denominator, I calculate the following F-statistic:
+$$
+F_{stat} = \frac{SSE_{\text{red}} - SSE_{\text{full}}}{q * s^2_{full}}
+$$
+```{r, include = TRUE}
+f_2a <- (sum(residuals(lm2_noInter)^2) - sum(residuals(lm2_inter)^2))/
+  (2 * (summary(lm2_inter)$sigma)^2)
+sprintf("F-stat = %f", f_2a)
+```
+I calculate the p-value of this statistic:
+```{r, include = TRUE}
+sprintf("p-value = %f", pf(f_2a, df1 = 2, df2 = 4, lower.tail = FALSE))
+```
+Note that $0.678201 > 0.05$, so I $\textbf{fail to reject } H_0$.
+
+### 2b. Testing effect of factor A, controlling for B
+The hypotheses in this example are:
+$$
+H_0: \beta_{\text{A2}} = \beta_{\text{A3}} = 0 \text{ and } H_a: \text{at least one } \beta_{\text{A}} \neq 0
+$$
+If the null hypothesis is true, than the level of factor A has no statistically significant bearing on the data. I have already generated the full model in this case (the one with no interactions). So, I generate the reduced model, and calculate the same f-statistic as in part 2a (here, there would be 2 degrees of freedom in the numerator, and $10 - (3 + 1) = 6$ in the denominator as the full model has 3 parameters):
+```{r, include = TRUE}
+lm2_onlyB <-  lm("data ~ factorB", data = facData)
+f_2b <- (sum(residuals(lm2_onlyB)^2) - sum(residuals(lm2_noInter)^2))/
+  (2 * (summary(lm2_noInter)$sigma)^2)
+sprintf("F-stat = %f", f_2b)
+```
+I then calculate the p-value of this statistic:
+```{r, include = TRUE}
+sprintf("p-value = %f", pf(f_2b, df1 = 2, df2 = 6, lower.tail = FALSE))
+```
+Since $0.155 < 0.05$, $\text{I reject } H_0$ at $\alpha = 0.05$; factor A seems to be statistically significant.
+
+### 2c. Testing the effect of factor A, standalone
+In this case, the hypotheses are the same as in part B, but the full model is the model with only factor A in it, while the reduced model is a model with only an intercept (in this case the mean of the data). I calculate the F-statistic (in this case, the numerator has 2 degrees of freedom, as before, but denominator has $10 - (2 + 1) = 7$ degrees of freedom, as the model with only factor A has no other parameters):
+```{r, include = TRUE}
+lm2_onlyA <- lm("data ~ factorA", data = facData)
+lm2_justMean <- lm("data ~ factorB", data = facData)
+f_2c <- (sum(residuals(lm2_justMean)^2) - sum(residuals(lm2_onlyA)^2))/
+  (2 * (summary(lm2_onlyA)$sigma)^2)
+sprintf("F-stat = %f", f_2c)
+```
+
+I then calculate the p-value
+```{r, include = TRUE}
+sprintf("p-value = %f", pf(f_2c, df1 = 2, df2 = 7, lower.tail = FALSE))
+```
+Since $0.0279 < 0.05$, $\text{I reject } H_0$ at $\alpha = 0.05$; once again, factor A seems to be statistically significant.
+
+### 2d. Comparing the results from 2b and 2c
+The difference between our tests for significance in 2b and 2c is that the test in 2c measured the standalone predictive power of factor A on the data (there were no other predictors in the model) while the test in 2b controlled for Factor B; that is, the significance of the coefficients corresponding to different levels of A was a measure of the predictive power of factor A over the mean within a particular level of factor B. Note that the p-value for 2b was lower than 2c; this indicates that $\textbf{factor A was more powerful in explaining the variance within each level of factor B}$ than overall variance. This could be due to the unbalanced nature of the data or the fact that mean of data is different between factor B levels.
+
+
 \newpage
 
 ## 3. One-factor ANOVA
 
+### 3a. Calculating the sum sq for Within Groups
+To calculate $SSB$, I first need to calculate the overall mean:
+$$
+\bar{x} = \frac{n_{C}\bar{x}_C + n_{NO}\bar{x}_{NO} + n_{HO}\bar{x}_{HO}}{n_C + n_{NO} + n_{HO}} = \frac{12(2.93) + 10(3.58) + 11(4.19)}{11 + 10 + 12} = 3.547
+$$
+
+I use the formula provided in the slides:
+\begin{align*}
+SSB &= \sum_{i \in \text{C,NO,HO}}n_i(\bar{x}_i - \bar{x})^2\\
+&= 12(2.93 - 3.547)^2 + 10(3.58 - 3.547)^2 + 11(4.19 - 3.547)^2\\
+&= \mathbf{9.1271}
+\end{align*}
+
+### 3b. Filling in the other missing fields
+The other values to be calculated are:
+\begin{itemize}
+\item Mean Squared Between ($MSB$)
+\item F statistic for between groups ($F_{\text{B}}$)
+\item p-value for f-stat above
+\item Sum of Squared Within ($SSW$)
+\item Degrees of Freedom Within ($df_{W}$)
+\item Mean Squared Within ($MSW$)
+\end{itemize}
+
+I start with $MSB,SSW, df_W$ and $MSW$, using formulas from the slides:
+\begin{align*}
+&MSB = \frac{SSB}{df_B} = \frac{9.1271}{2} = \mathbf{4.56355}\\
+&SSW = SST - SSB = 23.7218 - 9.1271 = \mathbf{14.5947}\\
+&df_W = n_{\text{total}} - \text{Number of Groups} = 33 - 3 = \mathbf{30}\\
+&MSW = \frac{SSW}{df_W} = \frac{14.5947}{30} = \mathbf{0.48649}
+\end{align*}
+
+Then, I calculate the F-statistic for between groups:
+$$
+F_b = \frac{MSB}{MSW} = \frac{4.56355}{0.48649} = \mathbf{9.38056}
+$$
+
+For the p-value, note that the statistic above comes from an F distribution with 2 numerator degrees of freedom and $32 - 2 = 30$ denominator degrees of freedom:
+```{r, include = TRUE}
+sprintf("p-value = %f", pf(9.38056, df1 = 2, df2 = 30, lower.tail = FALSE))
+```
+
+### 3c. Are the means the same?
+The test statistic and p-value correspond to testing $H_0: \mu_C = \mu_{NO} = \mu_{HO}$. Since $0.000685 < 0.01$, I would reject $H_0$ at $\alpha = .01, .05, \text{ and/or } .1$. There is statistically significant evidence that at least one mean is different.
+
 \newpage
+
+
 
 ## 4. National Life Expectancies
