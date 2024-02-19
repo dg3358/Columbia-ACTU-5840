@@ -1,0 +1,21 @@
+---
+title: "Homework 5 - Predictive Modeling in Finance and Insurance"
+author: "Dennis Goldenberg"
+date: "2024-02-19"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#1. Cross Validation
+
+\newpage
+
+#2. Shrinkage Method - Ridge Regression
+
+\newpage
+
+#3. Shrinkage Method
+
