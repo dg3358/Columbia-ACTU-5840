@@ -9,8 +9,42 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r, include = TRUE}
+library(MASS)
+library(ggplot2)
+#library(ISLR)
+```
+
 #1. Cross Validation
 
+## 1a. Compute LOOCV
+I use the method prescribed in the homework, noting that the default for the cross validation method is Leave-One-Out Cross validation and show the result:
+```{r, include = TRUE}
+LOOCV <- c()
+for (i in 1:10){
+  polyLCV <- glm(sprintf('medv ~ poly(lstat, %f)', i), data = Boston)
+  LOOCV <- append(LOOCV,boot::cv.glm(data = Boston,glmfit = polyLCV)$delta[2])
+}
+LCVFrame <- data.frame(cbind(1:10, LOOCV))
+colnames(LCVFrame) <- c("Degree", "LOOCV")
+LCVFrame
+```
+
+I graph the LOOCV plot:
+```{r, include = TRUE}
+ggplot(data = LCVFrame) + geom_line(aes(x = Degree,y = LOOCV)) +
+  geom_point(aes(x = Degree, y = LOOCV), color = 'red') + 
+  scale_x_continuous(breaks = seq(1,10, by = 1))
+```
+I find the degree of polynomial with the minimum error:
+```{r, include = TRUE}
+sprintf("Polynomial Degree with smallest Test MSE: %.0f",
+        which.min(LOOCV))
+```
+
+## 1b. Compute 10-fold CV
+
+## 1c. Comparison of 10-fold CV, LOOCV
 \newpage
 
 #2. Shrinkage Method - Ridge Regression
