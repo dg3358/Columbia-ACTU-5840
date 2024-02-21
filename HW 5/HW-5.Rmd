@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, include = TRUE}
+```{r, echo = FALSE}
 library(MASS)
 library(ggplot2)
 #library(ISLR)
@@ -41,10 +41,52 @@ I find the degree of polynomial with the minimum error:
 sprintf("Polynomial Degree with smallest Test MSE: %.0f",
         which.min(LOOCV))
 ```
+The $\textbf{Polynmoial Degree 6}$ model is chosen.
 
 ## 1b. Compute 10-fold CV
+I do the same thing, but set $K = 10$:
+```{r, include = TRUE}
+set.seed(15)
+TCV <- c()
+for (i in 1:10){
+  polyTCV <- glm(sprintf('medv ~ poly(lstat, %f)', i), data = Boston)
+  TCV <- append(TCV,boot::cv.glm(data = Boston,glmfit = polyTCV,
+                                   K = 10)$delta[2])
+}
+TCVFrame <- data.frame(cbind(1:10, TCV))
+colnames(TCVFrame) <- c("Degree", "TenFoldCV")
+TCVFrame
+```
+
+I graph the TCV plot:
+```{r, include = TRUE}
+ggplot(data = TCVFrame) + geom_line(aes(x = Degree,y = TenFoldCV)) +
+  geom_point(aes(x = Degree, y = TenFoldCV), color = 'red') + 
+  scale_x_continuous(breaks = seq(1,10, by = 1))
+```
+I find the degree of polynomial with the minimum error:
+```{r, include = TRUE}
+sprintf("Polynomial Degree with smallest Test MSE: %.0f",
+        which.min(TCV))
+```
+The $\textbf{Polynmoial Degree 6}$ model is chosen.
 
 ## 1c. Comparison of 10-fold CV, LOOCV
+I graph both MSE lines atop each other:
+```{r, include = TRUE}
+cFrame <- LCVFrame %>% left_join(TCVFrame, by=c('Degree'))
+ggplot(data = cFrame) + 
+  geom_line(aes(x = Degree,y = TenFoldCV), color = 'blue') +
+  geom_point(aes(x = Degree, y = TenFoldCV), color = 'blue') +
+  geom_line(aes(x = Degree,y = LOOCV), color = 'red') +
+  geom_point(aes(x = Degree, y = LOOCV), color = 'red') + 
+  scale_x_continuous(breaks = seq(1,10, by = 1)) + 
+  labs(y = "CV MSE")
+```
+
+The two methods for MSE follow very similar patterns, with the 10-Fold CV having a slightly lower MSE for most polynomial degrees. This is due to LOOCV having slightly higher variance due to the potential for overfitting caused by using all but one observation in the training data set.
+
+
 \newpage
 
 #2. Shrinkage Method - Ridge Regression
