@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, echo = FALSE}
 library(MASS)
 library(ggplot2)
-#library(ISLR)
+library(ISLR)
 ```
 
 #1. Cross Validation
@@ -90,6 +90,22 @@ The two methods for MSE follow very similar patterns, with the 10-Fold CV having
 \newpage
 
 #2. Shrinkage Method - Ridge Regression
+
+## 2a. Finding Optimal tuning parameter, Each case
+I find the optimal tuning parameter for each of the different proportions for the training set:
+```{r, include = TRUE}
+set.seed(1)
+train_p <- seq(.5, 1, by = .1)
+
+#get all non-NA salary data
+nonNAIndices <- which(!is.na(Hitters$Salary))
+data_Hit <- Hitters[nonNAIndices,]
+
+#find optimal lambda for each training proportion
+for (prop in train_p){
+}
+summary(lm("Salary ~.", data = data_Hit))
+```
 
 \newpage
 
