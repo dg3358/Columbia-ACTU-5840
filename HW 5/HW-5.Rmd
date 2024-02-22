@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(MASS)
 library(ggplot2)
 library(ISLR)
+library(glmnet)
+library(dplyr)
 ```
 
 #1. Cross Validation
@@ -74,7 +76,7 @@ The $\textbf{Polynmoial Degree 6}$ model is chosen.
 ## 1c. Comparison of 10-fold CV, LOOCV
 I graph both MSE lines atop each other:
 ```{r, include = TRUE}
-cFrame <- LCVFrame %>% left_join(TCVFrame, by=c('Degree'))
+cFrame <- left_join(LCVFrame, TCVFrame, by=c('Degree'))
 ggplot(data = cFrame) + 
   geom_line(aes(x = Degree,y = TenFoldCV), color = 'blue') +
   geom_point(aes(x = Degree, y = TenFoldCV), color = 'blue') +
@@ -91,8 +93,8 @@ The two methods for MSE follow very similar patterns, with the 10-Fold CV having
 
 #2. Shrinkage Method - Ridge Regression
 
-## 2a. Finding Optimal tuning parameter, Each case
-I find the optimal tuning parameter for each of the different proportions for the training set:
+## 2a. Varying Training Set Size
+I find the optimal tuning parameter and minimum MSE for each of the different proportions for the training set:
 ```{r, include = TRUE}
 set.seed(1)
 train_p <- seq(.5, 1, by = .1)
@@ -100,13 +102,82 @@ train_p <- seq(.5, 1, by = .1)
 #get all non-NA salary data
 nonNAIndices <- which(!is.na(Hitters$Salary))
 data_Hit <- Hitters[nonNAIndices,]
+x <- model.matrix(Salary ~., data = data_Hit)
+y <- data_Hit$Salary
+lambdas <- c()
+MSE <- c()
 
-#find optimal lambda for each training proportion
+#find optimal lambda, MSE for for each training proportion
 for (prop in train_p){
+  train_samp <- sample(1:length(nonNAIndices), 
+                       size = as.integer(prop * length(rownames(data_Hit))),
+                       replace = F)
+  test_samp <- setdiff(1:length(nonNAIndices), train_samp)
+  optMod <- cv.glmnet(x[train_samp,],y[train_samp],type.measure =
+                      "mse",alpha = 0,family="gaussian")
+  lambdas <- append(lambdas, optMod$lambda.1se)
+  if (prop < 1){
+  predictions <- predict(optMod, newx = x[test_samp,], s = optMod$lambda.1se)
+  MSE <- append(MSE,sum((predictions - y[test_samp])^2)/(length(y[test_samp])))
+  } else {
+    MSE <- append(MSE, 0)
+  }
 }
-summary(lm("Salary ~.", data = data_Hit))
 ```
 
+I plot lambdas vs. proportion of dataset:
+```{r, include = TRUE}
+lFrame <- cbind.data.frame(round(train_p * 100, 0), lambdas)
+names(lFrame) <- c("% of data in Train", "Optimal Lambda")
+ggplot(data = lFrame) +
+  geom_line(aes(x = `% of data in Train`, y = `Optimal Lambda`)) + 
+  geom_point(aes(x = `% of data in Train`, y = `Optimal Lambda`), color='red') + 
+  labs(title = "Optimal Tuning Parameter vs. Proportion of Data for Train") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Then, I plot MSE vs. proportion of dataset:
+```{r, include = TRUE}
+lFrameMSE <- cbind.data.frame(round(train_p * 100, 0), MSE)
+names(lFrameMSE) <- c("% of data in Train", "MSE")
+ggplot(data = lFrameMSE) +
+  geom_line(aes(x = `% of data in Train`, y = MSE)) + 
+  geom_point(aes(x = `% of data in Train`, y = MSE), color='red') + 
+  labs(title = "Mean Squared Error vs. Proportion of Data for Train") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+It seems as though using $\textbf{70\%}$ of the data seems to minimize test Mean Squared error (100% train data cannot be considered, as no test MSE can be calculated when there is no test data).
+
+## 2b. Varying Random Seed
+I run essentially the same method as above, but this time I vary the seed:
+```{r, include = TRUE}
+lambdas2 <- c()
+for (j in 1:10){
+  set.seed(j)
+  train_samp2 <- sample(1:length(nonNAIndices), 
+                       size = as.integer(0.85 * length(rownames(data_Hit))),
+                       replace = F)
+  set.seed(1)
+  optMod2 <- cv.glmnet(x[train_samp2,],y[train_samp2],type.measure =
+                      "mse",alpha = 0,family="gaussian")
+  lambdas2 <- append(lambdas2, optMod2$lambda.1se)
+}
+```
+
+Now I plot the optimal lambda value against the seed values:
+```{r, include = TRUE}
+lFrame2 <- cbind.data.frame(1:10, lambdas2)
+names(lFrame2) <- c("Seed", "Optimal Lambda")
+ggplot(data = lFrame2) +
+  geom_line(aes(x = Seed, y = `Optimal Lambda`)) + 
+  geom_point(aes(x = Seed, y = `Optimal Lambda`), color='red') + 
+  scale_x_continuous(breaks = seq(1,10, by = 1)) + 
+  labs(title = "Optimal Tuning Parameter vs. Random Seed") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## 2c. Takeaways, Observations From Above
+From the graphs plotting optimal lambdas against training proportion and seed, it seems as though proportion of training data has a noticeable impact on optimal lambda, while seed does not. As the proportion of data being trained on gets higher, there seems to be a downward trend in optimal lambda; a reason for this is that there is more data to glean which variables are truly important and which aren't, so higher betas on the important variables decrease the error function by enough to compensate for the penalty. However, the fact that there is no significant trend with respect to the seed may be the result of the fact that 10-fold cross validation is being used; there is significant overlap between any 2 randomly generated training sets that cover 90% of the data, so the Cross Validation error calculations for each seed are likely very similar, as nothing fundamentally changes from seed to seed.
 \newpage
 
 #3. Shrinkage Method
