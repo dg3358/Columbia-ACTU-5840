@@ -9,15 +9,16 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, echo = FALSE}
-library(MASS)
+```{r, echo = TRUE, results = 'hide'}
+library(MASS, quietly = TRUE)
 library(ggplot2)
 library(ISLR)
-library(glmnet)
-library(dplyr)
+suppressPackageStartupMessages(library(glmnet, quietly = TRUE))
+suppressPackageStartupMessages(library(dplyr, quietly = TRUE))
+suppressPackageStartupMessages(library(reshape, quietly = TRUE))
 ```
 
-#1. Cross Validation
+# 1. Cross Validation
 
 ## 1a. Compute LOOCV
 I use the method prescribed in the homework, noting that the default for the cross validation method is Leave-One-Out Cross validation and show the result:
@@ -44,6 +45,8 @@ sprintf("Polynomial Degree with smallest Test MSE: %.0f",
         which.min(LOOCV))
 ```
 The $\textbf{Polynmoial Degree 6}$ model is chosen.
+
+\newpage
 
 ## 1b. Compute 10-fold CV
 I do the same thing, but set $K = 10$:
@@ -73,17 +76,19 @@ sprintf("Polynomial Degree with smallest Test MSE: %.0f",
 ```
 The $\textbf{Polynmoial Degree 6}$ model is chosen.
 
+\newpage
+
 ## 1c. Comparison of 10-fold CV, LOOCV
 I graph both MSE lines atop each other:
 ```{r, include = TRUE}
 cFrame <- left_join(LCVFrame, TCVFrame, by=c('Degree'))
+cFrame <- melt.data.frame(cFrame, id.vars = 'Degree', variable_name = "CV Type")
 ggplot(data = cFrame) + 
-  geom_line(aes(x = Degree,y = TenFoldCV), color = 'blue') +
-  geom_point(aes(x = Degree, y = TenFoldCV), color = 'blue') +
-  geom_line(aes(x = Degree,y = LOOCV), color = 'red') +
-  geom_point(aes(x = Degree, y = LOOCV), color = 'red') + 
+  geom_line(aes(x = Degree,y = value, color = `CV Type`)) +
+  geom_point(aes(x = Degree, y = value, color = `CV Type`)) +
   scale_x_continuous(breaks = seq(1,10, by = 1)) + 
-  labs(y = "CV MSE")
+  labs(title = "MSE vs. Degree by CV Method", y = "CV MSE") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 The two methods for MSE follow very similar patterns, with the 10-Fold CV having a slightly lower MSE for most polynomial degrees. This is due to LOOCV having slightly higher variance due to the potential for overfitting caused by using all but one observation in the training data set.
@@ -91,7 +96,7 @@ The two methods for MSE follow very similar patterns, with the 10-Fold CV having
 
 \newpage
 
-#2. Shrinkage Method - Ridge Regression
+# 2. Shrinkage Method - Ridge Regression
 
 ## 2a. Varying Training Set Size
 I find the optimal tuning parameter and minimum MSE for each of the different proportions for the training set:
@@ -125,8 +130,8 @@ for (prop in train_p){
 }
 ```
 
-I plot lambdas vs. proportion of dataset:
-```{r, include = TRUE}
+I plot lambdas vs. proportion of data set:
+```{r, include = TRUE, out.height = '70%', out.width = '70%', fig.align='center'}
 lFrame <- cbind.data.frame(round(train_p * 100, 0), lambdas)
 names(lFrame) <- c("% of data in Train", "Optimal Lambda")
 ggplot(data = lFrame) +
@@ -137,7 +142,7 @@ ggplot(data = lFrame) +
 ```
 
 Then, I plot MSE vs. proportion of dataset:
-```{r, include = TRUE}
+```{r, include = TRUE, out.height = '70%', out.width = '70%', fig.align='center'}
 lFrameMSE <- cbind.data.frame(round(train_p * 100, 0), MSE)
 names(lFrameMSE) <- c("% of data in Train", "MSE")
 ggplot(data = lFrameMSE) +
@@ -146,7 +151,10 @@ ggplot(data = lFrameMSE) +
   labs(title = "Mean Squared Error vs. Proportion of Data for Train") + 
   theme(plot.title = element_text(hjust = 0.5))
 ```
+
 It seems as though using $\textbf{70\%}$ of the data seems to minimize test Mean Squared error (100% train data cannot be considered, as no test MSE can be calculated when there is no test data).
+
+\newpage
 
 ## 2b. Varying Random Seed
 I run essentially the same method as above, but this time I vary the seed:
@@ -177,8 +185,44 @@ ggplot(data = lFrame2) +
 ```
 
 ## 2c. Takeaways, Observations From Above
-From the graphs plotting optimal lambdas against training proportion and seed, it seems as though proportion of training data has a noticeable impact on optimal lambda, while seed does not. As the proportion of data being trained on gets higher, there seems to be a downward trend in optimal lambda; a reason for this is that there is more data to glean which variables are truly important and which aren't, so higher betas on the important variables decrease the error function by enough to compensate for the penalty. However, the fact that there is no significant trend with respect to the seed may be the result of the fact that 10-fold cross validation is being used; there is significant overlap between any 2 randomly generated training sets that cover 90% of the data, so the Cross Validation error calculations for each seed are likely very similar, as nothing fundamentally changes from seed to seed.
+From the graphs plotting optimal lambdas against training proportion and seed, it seems as though proportion of training data has a noticeable impact on optimal lambda, while seed does not. As the proportion of data being trained on gets higher, there seems to be a downward trend in optimal lambda; a reason for this is that there is more data to glean which variables are truly important and which aren't, so higher betas on the important variables decrease the error function by enough to compensate for the penalty. However, the fact that there is no significant trend with respect to the seed may be the result of the fact that 10-fold cross validation is being used; there is significant similarity between splits of the data under different random seeds, so the Cross Validation error calculations for each seed are likely very similar.
 \newpage
 
-#3. Shrinkage Method
+# 3. Shrinkage Method
 
+## 3a. Calculating the MSE errors for different alphas
+I find the MSE under different alphas:
+```{r, include = TRUE}
+set.seed(1)
+train_samp3 <- sample(1:length(nonNAIndices), 
+                       size = as.integer(2/3 * length(rownames(data_Hit))),
+                       replace = F)
+test_samp3 <- setdiff(1:length(nonNAIndices), train_samp3)
+alphas <- seq(0,1, by = 1/20)
+MSE3 <- c()
+for (a in alphas){
+  optMod3 <- cv.glmnet(x[train_samp3,],y[train_samp3],type.measure =
+                      "mse",alpha = a,family="gaussian")
+  predictions3 <- predict(optMod3, newx = x[test_samp3,], s= optMod3$lambda.1se)
+  MSE3 <- append(MSE3,
+                 sum((predictions3 - y[test_samp3])^2)/(length(y[test_samp3])))
+}
+alphaFrame <- cbind.data.frame(alphas, MSE3)
+names(alphaFrame) <- c("alpha", "MSE")
+alphaFrame
+```
+\newpage
+
+## 3b. Plotting fit when alpha = 1
+I plot the final fit of my for loop, which uses $\alpha = 1$:
+```{r, include = TRUE}
+plot(optMod3)
+```
+
+## 3c. I find the smallest MSE
+I find the alpha with the smallest MSE, and said smallest MSE:
+```{r, include = TRUE}
+sprintf("Alpha with smallest MSE: %.2f",
+        alphaFrame$alpha[which.min(alphaFrame$MSE)])
+sprintf("Minimum MSE: %.2f",min(alphaFrame$MSE))
+```
