@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, include = TRUE}
 library(MASS)
 library(leaps)
+Boston$chas <- factor(Boston$chas)
 ```
 # 1. Model Selection
 
@@ -25,9 +26,8 @@ summary(bestSubset)$outmat
 So , the first 6 variables that were selected were $1. \text{ lstat } 2. \text{ rm } 3. \text{ ptratio } 4. \text{ dis } 5. \text{ nox } 6. \text{ chas}$.
 I show the $c_p, \text{BIC}, \text{ and } R^2$ respectively for the first 6 models:
 ```{r, include = TRUE}
-eStatdf <- data.frame(cbind(1:6, summary(bestSubset)$cp[1:6],
-                            summary(bestSubset)$bic[1:6],
-                            summary(bestSubset)$adjr2[1:6]))
+eStatdf<-data.frame(cbind(1:6, summary(bestSubset)$cp[1:6],
+         summary(bestSubset)$bic[1:6],summary(bestSubset)$adjr2[1:6]))
 colnames(eStatdf) <- c("Model #", "Cp", "BIC", "Adj. R Squared")
 eStatdf
 ```
@@ -54,7 +54,7 @@ featSelect
 ```
 
 ## c. Comparing Variable selections
-The best Subset selection and forward selection algorithms selected the same 6 variables, and in the same order. The backward selection algorithm matched the other two up until model 6, where the 6th variable selected was $\text{black}$ as opposed to $\text{chas}$.
+The best Subset selection and forward selection algorithms selected the same 6 variables, and in the same order. The backward selection algorithm matched the other two up until model 6, where the 6th variable selected was $\text{black}$ as opposed to $\text{chas}$. I compare the coefficients from the different models
 ```{r, include = TRUE}
 BestFowModel <- lm("medv ~ lstat + rm + ptratio + dis + nox + chas",
                    data = Boston)
@@ -64,4 +64,25 @@ print("Coefficients for Best Subset and forward model:")
 summary(BestFowModel)$coefficients
 print("Coefficients for Backward Model:")
 summary(backModel)$coefficients
+```
+The coefficients for the first 5 variables are of the same sign, all significant even at an $\alpha = .01$ significance level, and all of similar size. The 6th variable in the Best Subset or forward case is $\text{chas}$, which has the same sign and same significance as $\text{black}$,with the difference in estimate for coefficients attributable to the difference in scale. Altogether, best subset, forward selection, and backward selection produce very similar models when $k = 6$.
+
+## 1d. Model Selection via cross-validation
+
+### i. Creating a Vector and sampling
+```{r, include = TRUE}
+set.seed(1)
+dataCV <- subset.data.frame(Boston, select = c("medv","lstat", "rm","ptratio",
+                                          "dis", "nox","chas"))
+obs <-1:dim(dataCV)[1]
+samples <- list()
+for(i in 1:10){
+  if(i < 10){
+  samples[[i]] <- sample(obs,size=as.integer(0.1 * dim(dataCV)[1]))
+  obs <- setdiff(obs, samples)
+  } else {
+    samples[[i]] <- obs
+  }
+}
+samples
 ```
