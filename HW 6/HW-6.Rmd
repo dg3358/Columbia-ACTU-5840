@@ -1,5 +1,5 @@
 ---
-title: "Homework 5 - Predictive Modeling in Finance and Insurance"
+title: "Homework 6 - Predictive Modeling in Finance and Insurance"
 author: "Dennis Goldenberg"
 date: "2024-02-27"
 output: pdf_document
@@ -9,22 +9,59 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+```{r, include = TRUE}
+library(MASS)
+library(leaps)
+```
+# 1. Model Selection
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+## a. Best Subset Selection
+I perform the selection as intended:
+```{r, include = TRUE}
+bestSubset <- leaps::regsubsets(medv ~., data = Boston, method = "exhaustive",
+                                nvmax = dim(Boston)[2] - 1)
+summary(bestSubset)$outmat
+```
+So , the first 6 variables that were selected were $1. \text{ lstat } 2. \text{ rm } 3. \text{ ptratio } 4. \text{ dis } 5. \text{ nox } 6. \text{ chas}$.
+I show the $c_p, \text{BIC}, \text{ and } R^2$ respectively for the first 6 models:
+```{r, include = TRUE}
+eStatdf <- data.frame(cbind(1:6, summary(bestSubset)$cp[1:6],
+                            summary(bestSubset)$bic[1:6],
+                            summary(bestSubset)$adjr2[1:6]))
+colnames(eStatdf) <- c("Model #", "Cp", "BIC", "Adj. R Squared")
+eStatdf
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+## b. Forward and backward selection
+I repeat the procedure for a, but doing forward and backward selection, and show the first 6 variables selected in each case in data frame format:
+```{r, include = TRUE}
+forSubset <- leaps::regsubsets(medv ~., data = Boston, method = "forward",
+                                nvmax = dim(Boston)[2] - 1)
+backSubset <- leaps::regsubsets(medv ~., data = Boston, method = "backward",
+                                nvmax = dim(Boston)[2] - 1)
+summary(forSubset)$outmat
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r, include = TRUE}
+summary(backSubset)$outmat
+```
+
+```{r, include = TRUE}
+featSelect<-data.frame(1:6,cbind(c("lstat", "rm", "ptratio","dis","nox","chas"),
+                              c("lstat", "rm", "ptratio","dis","nox","black")))
+colnames(featSelect) <- c("Model Number", "Var. forward", "Var. backward")
+featSelect
+```
+
+## c. Comparing Variable selections
+The best Subset selection and forward selection algorithms selected the same 6 variables, and in the same order. The backward selection algorithm matched the other two up until model 6, where the 6th variable selected was $\text{black}$ as opposed to $\text{chas}$.
+```{r, include = TRUE}
+BestFowModel <- lm("medv ~ lstat + rm + ptratio + dis + nox + chas",
+                   data = Boston)
+backModel <- lm("medv ~ lstat + rm + ptratio + dis + nox + black",
+                   data = Boston)
+print("Coefficients for Best Subset and forward model:")
+summary(BestFowModel)$coefficients
+print("Coefficients for Backward Model:")
+summary(backModel)$coefficients
+```
