@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include = TRUE}
 library(MASS)
+library(ggplot2)
 library(leaps)
 Boston$chas <- factor(Boston$chas)
 ```
@@ -23,8 +24,7 @@ bestSubset <- leaps::regsubsets(medv ~., data = Boston, method = "exhaustive",
                                 nvmax = dim(Boston)[2] - 1)
 summary(bestSubset)$outmat
 ```
-So , the first 6 variables that were selected were $1. \text{ lstat } 2. \text{ rm } 3. \text{ ptratio } 4. \text{ dis } 5. \text{ nox } 6. \text{ chas}$.
-I show the $c_p, \text{BIC}, \text{ and } R^2$ respectively for the first 6 models:
+So , the variables were $1. \text{ lstat } 2. \text{ rm } 3. \text{ ptratio } 4. \text{ dis } 5. \text{ nox } 6. \text{ chas}$. I show the $c_p, \text{BIC}, \text{ and } R^2$:
 ```{r, include = TRUE}
 eStatdf<-data.frame(cbind(1:6, summary(bestSubset)$cp[1:6],
          summary(bestSubset)$bic[1:6],summary(bestSubset)$adjr2[1:6]))
@@ -69,7 +69,8 @@ The coefficients for the first 5 variables are of the same sign, all significant
 
 ## 1d. Model Selection via cross-validation
 
-### i. Creating a Vector and sampling
+### i. Creating 10 folds through sampling, and Matrix for Results
+I orchestrate what is desired, including making a subset of only the variables for ease in generation of MSE:
 ```{r, include = TRUE}
 set.seed(1)
 dataCV <- subset.data.frame(Boston, select = c("medv","lstat", "rm","ptratio",
@@ -78,11 +79,103 @@ obs <-1:dim(dataCV)[1]
 samples <- list()
 for(i in 1:10){
   if(i < 10){
-  samples[[i]] <- sample(obs,size=as.integer(0.1 * dim(dataCV)[1]))
-  obs <- setdiff(obs, samples)
+  samples[[i]] <- sample(obs,size=(as.integer(0.1 * dim(dataCV)[1]) + (i %%2)))
+  obs <- setdiff(obs, unlist(samples))
   } else {
-    samples[[i]] <- obs
+    samples[[i]] <- setdiff(obs, samples)
   }
 }
-samples
+resultsMatrix <- matrix(nrow = 6, ncol = 10)
+rownames(resultsMatrix) = c("Model 1", "Model 2", "Model 3",
+                            "Model 4", "Model 5", "Model 6")
 ```
+
+### ii. Training on 9 test sets, testing on final set
+I train each of the models 10 times, leaving one set of points out for testing, and then predict on that last set. The test MSE for each case is shown with the row indicating the model, and the column indicating the test set.
+```{r, include = TRUE}
+for (i in 1:10){
+  for (j in 2:7){
+    tempTrain <- dataCV[setdiff(1:506, samples[[i]]),1:j]
+    tempTest <- dataCV[samples[[i]],1:j]
+    tempMod <- lm("medv ~.", data = tempTrain)
+    predictTemp <- predict(tempMod, tempTest)
+    SSE <- sum(unname(predictTemp) - tempTest$medv)^2
+    resultsMatrix[j - 1,i] <- SSE/(dim(tempTest)[1])
+  }
+}
+print(resultsMatrix)
+```
+
+### iii. Computing MSE
+I use the apply function to get the CV MSE by taking the mean of each row.
+
+```{r, include = TRUE}
+CV_MSE <- apply(X = resultsMatrix, MARGIN = 1, FUN = 'mean')
+CV_MSE
+```
+
+I plot it against the number of variables used:
+```{r, include=TRUE}
+cvdframe <- data.frame(cbind(1:6, unname(CV_MSE)))
+colnames(cvdframe) <- c("Num. Variables", "CV MSE")
+ggplot(data = cvdframe) + geom_point(aes(x = `Num. Variables`, y = `CV MSE`)) +
+  geom_line(aes(x = `Num. Variables`, y = `CV MSE`), color = 'red') + 
+  labs(title = "Cross Validation MSE vs. Number of Variables") + 
+  scale_x_continuous(breaks=seq(1,6, by = 1)) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+The model that was selected was the one with three variables, with the variables acquired from best subset selection being $\text{ lstat}, \text{ rm}, \text{ and ptratio}$.
+
+### iv. Showing coefficients
+I show the coefficients of the best model below:
+```{r, include = TRUE}
+bestModel <- lm("medv ~ lstat + rm + ptratio", data = Boston)
+bestModel$coefficients
+```
+
+\newpage
+
+# 2. Feature Selection and Model Selection
+
+## a. Subset selection
+### i. Forward, 2
+The first variable that forward subset selection selects is $x_1$, as it has the lowest $SSE$ of all predictors. It can then choose to add one of the other variables. The model with $x_1$ and $x_3$ has a lower $SSE$, so this model chooses $x_1$ and $x_3$.
+
+### ii. Backward, 1
+The backward algorithm starts with model 8. Since removing variable $x_1$ creates the smallest increase in $SSE$, this one is removed first. Then, backward subset selection has 2 choices: remove $x_2$ and leave $x_3$, or visa versa. The SSE of the model with $x_3$ only is smaller than the one with , so $x_3$ is the variable selected.
+
+### iii. Backward, 2
+In the problem above, the first variable was removed was $x_1$, so the algorithm arrived at the model with $x_2$ and $x_3$; thus, these 2 are selected.
+
+## b. Model Selection
+
+Note that, from the full model, we know that:
+$$
+s^2_{\text{full}} = \frac{SSR_{\text{full}}}{N - k} = \frac{3.05}{10 - 3} = \frac{3.05}{7} 
+$$
+And, from the null model, $SST = 25$
+
+Using this value, I calculate all of the test stats for each of the models:
+```{r, include = TRUE}
+SSE <- c(25,9.5, 18,15,8.25,6.25,5.06,3.05)
+SST <- 25
+k <- c(0,1,1,1,2,2,2,3)
+s2full = 3.05/7
+Cp <- round((1/10)*(SSE + 2 *(k + 1)*s2full),3)
+AIC <- round((1/s2full)*(SSE + 2 *(k + 1)*s2full),3)
+BIC <- round((1/s2full)*(SSE + (log(10) *(k + 1)*s2full)),3)
+r2adj <- round(1 - ((SSE/SST)*(10 - 1)/(10 - k - 1)),3)
+sumFrame <- data.frame(cbind(1:8, SSE, Cp, AIC, BIC, r2adj))
+colnames(sumFrame) <- c("Model", "SSE", "Cp", "AIC", "BIC", "R^2adj")
+sumFrame
+```
+
+### i. Best Model, Best Subset, Mallows Cp
+For Best subset, Models 1, 2, 7, and 8 are considered (they have the lowest SSE for their fixed number of predictors). $\textbf{Model 8}$ is the one selected of those by $C_p$, having lowest of these 4.
+
+### ii. Best Model, Forward, BIC
+For the forward algorithm, Models 1, 2, 6, and then 8 are considered. Under $\text{BIC}$, $\textbf{Model 8}$ is selected, having the lowest of these 4.
+
+### iii. Best Model, Backward, R^2adj
+For the backward algorithm, models 8, 7, 4, and then 1 are considered. Under $R^2_{\text{adj}}$, $\textbf{model 8}$ is selected, having the highest of these 4.
