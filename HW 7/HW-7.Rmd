@@ -19,12 +19,45 @@ Boston$chas <- factor(Boston$chas)
 # 1. Generalized Linear Model
 
 ## a. Showing pdf belongs to exponential family
+I can modify the p.d.f and show:
+\begin{align*} 
+f(y;\theta) &= \theta y^{-\theta - 1}\\
+&= \theta e^{\ln(y^{-\theta - 1})}\\
+&= \theta e^{-\ln(y)*\theta - \ln(y)}\\
+&= e^{\ln(\theta)} * e^{-\ln(y)*\theta - \ln(y)}\\
+&= e^{-\ln(y)\theta + \ln(\theta) - \ln(y)}
+\end{align*}
+
+Thus, we have that $a(y) = -\ln(y)$, $b(\theta) = \theta$, $c(\theta) = \ln(\theta)$, $d(y) = -\ln(y)$.
 
 ## b. Natural Exponential family or Exponential Dispersion Family
+Note that $a(y) \neq y$; thus the Pareto distribution is NOT part of the natural exponential family. However, if you restructure the p.d.f:
+$$
+f(y;\theta) = e^{-\ln(y)\theta + \ln(\theta) - \ln(y)} = e^{-(\theta+ 1)\ln(y) + (1)\ln(\theta)}
+$$
+You can note that the Pareto distribution is also part of the Exponential dispersion family, with $\lambda = 1$.
 
 ## c. Score statistic
+To find the score statistic, I need log-likelihood function:
+$$
+\ell(\theta;y) = \ln(f(y;\theta)) = -\ln(y)*\theta + \ln(\theta) - \ln(y)
+$$
+The score function is just the derivative of the log-likelihood:
+$$
+S(\theta;y) = \frac{d}{d\theta}\ell(\theta;y) = -\ln(y) + \frac{1}{\theta}
+$$
+As this Pareto is in the EDF, $\mathbbf{E}[S(\theta;y)] = 0$.\\
+The Fischer information is simply the expectation of the second derivative:
+$$
+i(\theta) = -\mathbb{E}\left[\frac{d^2}{d\theta^2}\ell(\theta;y)\right] = -\mathbb{E}\left[-\frac{1}{\theta^2}\right] = \frac{1}{\theta^2}
+$$
 
 ## d. Pareto distribution and Exponential Family
+
+### i. Does it belong to the experiential family?
+
+### ii. Is it a GLM?
+This model is $\textbf{NOT}$ a generalized linear model. The model is NOT linear in its parameters, so the systematic component does not match the $x^T \beta$ linear format.
 
 \newpage
 
