@@ -1,0 +1,78 @@
+---
+title: "Homework 7 - Predictive Modeling in Finance and Insurance"
+author: "Dennis Goldenberg"
+date: "2024-03-25"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = TRUE}
+library(MASS)
+library(ggplot2)
+library(leaps)
+Boston$chas <- factor(Boston$chas)
+```
+
+# 1. Generalized Linear Model
+
+## a. Showing pdf belongs to exponential family
+
+## b. Natural Exponential family or Exponential Dispersion Family
+
+## c. Score statistic
+
+## d. Pareto distribution and Exponential Family
+
+\newpage
+
+# 2. Logistic Regression
+
+\newpage
+
+# 3. Logistic Regression Part 2
+
+## a. Coefficients from Models
+
+## b. Probability Estimates from models
+
+## c. Expeced Values from 3 Models
+
+## d. Pearson residuals
+
+## e. Goodness of fit statistics
+
+\newpage
+
+# 4. Maximum Likelihood Estimation approximation
+
+## a. Plot of number of cases against time period
+
+## b. Plot against log i
+
+## c. Fitting GLM
+
+
+\newpage
+
+# 5. Deviance
+
+## a. Calculating Deviance
+
+## b. Calculating Pearson residual
+
+## c. Calculating deviance residual
+
+\newpage
+
+# 6. Nominal Regression
+
+## a. Odds ratio
+
+## b. Probability Calculation
+
+\newpage
+
+# 7. Ordinal Regression
