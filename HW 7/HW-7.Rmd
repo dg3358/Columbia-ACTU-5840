@@ -9,13 +9,6 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, include = TRUE}
-library(MASS)
-library(ggplot2)
-library(leaps)
-Boston$chas <- factor(Boston$chas)
-```
-
 # 1. Generalized Linear Model
 
 ## a. Showing pdf belongs to exponential family
@@ -46,7 +39,7 @@ The score function is just the derivative of the log-likelihood:
 $$
 S(\theta;y) = \frac{d}{d\theta}\ell(\theta;y) = -\ln(y) + \frac{1}{\theta}
 $$
-As this Pareto is in the EDF, $\mathbbf{E}[S(\theta;y)] = 0$.\\
+As this Pareto is in the EDF, $\mathbb{E}[S(\theta;y)] = 0$.\\
 The Fischer information is simply the expectation of the second derivative:
 $$
 i(\theta) = -\mathbb{E}\left[\frac{d^2}{d\theta^2}\ell(\theta;y)\right] = -\mathbb{E}\left[-\frac{1}{\theta^2}\right] = \frac{1}{\theta^2}
@@ -54,7 +47,7 @@ $$
 
 ## d. Pareto distribution and Exponential Family
 
-### i. Does it belong to the experiential family?
+### i. Does it belong to the exponential family?
 
 ### ii. Is it a GLM?
 This model is $\textbf{NOT}$ a generalized linear model. The model is NOT linear in its parameters, so the systematic component does not match the $x^T \beta$ linear format.
@@ -62,17 +55,102 @@ This model is $\textbf{NOT}$ a generalized linear model. The model is NOT linear
 \newpage
 
 # 2. Logistic Regression
+Given the model, I have $\log\left(\frac{\pi}{1 - \pi}\right) = \beta_0 + 1(\beta_{>1}) + 1(\beta_{[0\%,10\%]})$. Therefore:
+\begin{align*}
+&\log\left(\frac{\pi}{1 - \pi}\right) = 1.53 + 0.735 - 0.031 = 2.234\\
+&\rightarrow \frac{\pi}{1 - \pi} = e^{2.234}\\
+&\rightarrow \pi = (1 - \pi)e^{2.234}\\
+&\rightarrow \hat{\pi} = \frac{e^{2.234}}{1 + e^{2.234}} = \mathbf{0.9033}
+\end{align*}
 
 \newpage
 
 # 3. Logistic Regression Part 2
 
 ## a. Coefficients from Models
+I generate the data by creating a data frame, and then run the model:
+```{r, include = TRUE}
+anther <- c(0,0,0,0,0,0,1,1,1,1,1,1)
+treatment <- c(0,0,0,1,1,1,0,0,0,1,1,1)
+freq <- c(102-55,99-52,108-57,76-55,81-50,90-50,
+          55,52,57,55,50,50)
+force <- c(40,150,350,40,150,350,40,150,350,40,150,350)
+dataEmb <- data.frame(cbind(anther, treatment, force, freq))
+dataEmb$treatment <- factor(dataEmb$treatment)
+
+# for Model 1
+model1 <- glm('anther ~ treatment + force + treatment*force',
+              data = dataEmb, family = "binomial"(link = 'logit'),
+              weights = freq)
+coef1 <- summary(model1)$coefficients[,1]
+
+# for Model 2
+model2 <- glm('anther ~ treatment + force',
+              data = dataEmb, family = "binomial"(link = 'logit'),
+              weights = freq)
+coef2 <- summary(model2)$coefficients[,1]
+
+# for Model 3
+model3 <- glm('anther ~ force',
+              data = dataEmb, family = "binomial"(link = 'logit'),
+              weights = freq)
+coef3 <- summary(model3)$coefficients[,1]
+print("Model 1 Coefficients:")
+print(coef1)
+print("Model 2 Coefficients:")
+print(coef2)
+print("Model 3 Coefficients:")
+print(coef3)
+```
 
 ## b. Probability Estimates from models
+To calculate the probability estimates, I note that:
+$$
+\hat{\pi} = \frac{e^{x^T\hat{\beta}}}{1 + e^{x^T\hat{\beta}}}
+$$
+From this, I calculate the probability estimates from the models
+```{r, include = TRUE}
+# for model 1
+x_s = dataEmb[1:6,2:3]
+x_s$inter <- x_s[,2]*c(0,0,0,1,1,1)
+desMat <- data.matrix(cbind(1,x_s))
+exTB1 <-exp(desMat %*% matrix(coef1))
+pi_1 <- exTB1/(1 + exTB1)
+pi_1 <- round(c(pi_1),4)
+
+#for model 2
+x_s2 = dataEmb[1:6,2:3]
+desMat2 <- data.matrix(cbind(1,x_s2))
+exTB2 <-exp(desMat2 %*% matrix(coef2))
+pi_2 <- exTB2/(1 + exTB2)
+pi_2 <- round(c(pi_2),4)
+
+#for model 3
+x_s3 = dataEmb[1:3,3]
+desMat3 <- data.matrix(cbind(1,x_s3))
+exTB3 <-exp(desMat3 %*% matrix(coef3))
+pi_3 <- exTB3/(1 + exTB3)
+pi_3 <- round(c(pi_3, pi_3),4)
+```
+I then create a matrix to show the $\hat{\pi}|\text{force},\text{treatment}$ under the 6 different possible conditions, where $\text{control} = C$, $\text{treatment} = T$:
+```{r, include = TRUE}
+pred_pis <- t(cbind(pi_1, pi_2,pi_3))
+colnames(pred_pis) <- c("40, C","150, C","350, C",
+                        "40, T", "150,T", "350, T")
+rownames(pred_pis) <- c("Model 1", "Model 2", "Model 3")
+pred_pis
+```
+
 
 ## c. Expeced Values from 3 Models
+```{r, include = TRUE}
+data.matrix(pred_pis) * c(102,99,108,76,81,90)
+```
 
+
+```{r, include = TRUE}
+
+```
 ## d. Pearson residuals
 
 ## e. Goodness of fit statistics
@@ -80,14 +158,107 @@ This model is $\textbf{NOT}$ a generalized linear model. The model is NOT linear
 \newpage
 
 # 4. Maximum Likelihood Estimation approximation
+```{r, include = TRUE}
+library(ggplot2)
+```
+
+
+```{r, include = TRUE}
+Year <- c(1984, 1985, 1986, 1987, 1988)
+Q1 <- c(1,27,43,88,110)
+Q2 <- c(6, 39, 51, 97, 113)
+Q3 <- c(16, 31, 63, 91, 149)
+Q4 <- c(23, 30, 70, 104, 159)
+dataAIDS <- data.frame(cbind(Year, Q1,Q2,Q3,Q4))
+```
 
 ## a. Plot of number of cases against time period
+```{r, include = TRUE}
+qMat <- t(data.matrix(dataAIDS[,2:5]))
+timeFrame <- data.frame(cbind(1:(dim(qMat)[1] * dim(qMat)[2]),as.vector(qMat)))
+ggplot(data = timeFrame) + geom_point(aes(X1,X2)) +
+  xlab("Time Frame (1984Q1 = 1)") + ylab ("Number of Cases") +
+  ggtitle("AIDS cases by Quarter, 1984-1988") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
 
 ## b. Plot against log i
+```{r, include = TRUE}
+timeFrameLog <- data.frame(cbind(log(timeFrame$X1),log(timeFrame$X2)))
+ggplot(data = timeFrameLog) + geom_point(aes(X1,X2)) +
+  xlab("Log of Time Frame (1984Q1 = 0)") + ylab ("Log of Number of Cases") +
+  ggtitle("Log of AIDS cases vs. Log of Time Frame") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+There seems to be a linear relationship between $\log(y_i)$ and $\log(i)$, suggesting that this model may be appropriate.
 
 ## c. Fitting GLM
+Note that, here, we are using the canonical link function for the poisson distribution. Therefore:
+$$
+g'(\mu)V(\mu) = 1 \rightarrow \mathbf{W} = \text{diag}\{1\} \text{ and } \theta = \lambda = g^{-1}(x^T\beta) = e^{x^T\beta}
+$$
+I find the log-likelihood and Score function of $\beta$:
+\begin{align*}
+&L(\lambda;y) = \prod_{i = 1}^{n}\frac{e^{-\lambda_i} * \lambda_i^{y_i}}{y_i!} = e^{-\sum_{i = 1}^{n}\lambda_i} * \frac{\prod_{i = 1}^{n}\lambda_i^{y_i}}{\prod_{i = 1}^{y_i}}\\
+&\rightarrow \ell(\lambda;y) = -\sum_{i = 1}^{n}\lambda_i + \sum_{i = 1}^{n}y_i\ln(\lambda_i) - \sum_{i = 1}^{n}\ln(y_i!)\\
+&\rightarrow \ell(\beta;y) = -\sum_{i = 1}^{n}e^{x_i^T\beta} + \sum_{i = 1}^{n}y_i(x_i^T\beta) - \sum_{i = 1}^{n}\ln(y_i!)\\
+&\rightarrow S\left(\beta;y\right) = \begin{bmatrix} \frac{d\ell}{d\beta_0} \\ \frac{d\ell}{d\beta_1}\end{bmatrix} = \begin{bmatrix} -\sum_{i = 1}^{n}e^{x_i^T\beta} + \sum_{i = 1}^{n}y_i\\ -\sum_{i = 1}^{n}x_i e^{x_i^T\beta} + \sum_{i = 1}^{n}x_i y_i\end{bmatrix}
+\end{align*}
+Further, from the slides, again from the canonical link:
+$$
+i\left(\beta, y\right) = x^T\text{diag}\left\{V(\mu_i)\right\}x = x^T\text{diag}\left\{e^{x_i^T\beta}\right\}x
+$$
+\newpage
 
+### Initial Step
+Before beginning, it is important to note:
+```{r, include = TRUE}
+sum(timeFrame$X2)
+sum(timeFrameLog$X1 * timeFrame$X2) 
+```
+So, $\sum_{i = 1}^{20}\log(i) = 1311 \text{ and } \sum_{i = 1}^{20}y_i\log(i) = 3396.379$. Therefore:
+$$
+S\left(\beta;y\right) = \begin{bmatrix} -\sum_{i = 1}^{n}e^{x_i^T\beta} + 1311\\ -\sum_{i = 1}^{n}x_i e^{x_i^T\beta} + 3396.379\end{bmatrix}
+$$
+Now for the initial step. I do some preliminary calculations:
+```{r, include = TRUE}
+e_xi <- sum(exp(timeFrameLog$X1))
+x_ie_exi <- sum(exp(timeFrameLog$X1) %*% timeFrameLog$X1)
+e_xi
+x_ie_exi
+```
+```{r, include = TRUE}
+i_0 <- t(data.matrix(timeFrameLog)) %*% diag(exp(timeFrameLog$X1)) %*%
+  data.matrix(timeFrameLog)
+i_0
+```
 
+\begin{itemize}
+\item I start with $\beta^0 = \begin{bmatrix}0 & 1\end{bmatrix}^T$.
+\item $S_0(\beta^0;y) = \begin{bmatrix} -\sum_{i = 1}^{20}e^{x_i} + 1311\\ -\sum_{i = 1}^{n}x_i e^{x_i} + 3396.379\end{bmatrix} = \begin{bmatrix} -210 + 1311\\ -529 + 3396.379\end{bmatrix} = \begin{bmatrix} 1101 \\ 2866.7768\end{bmatrix}$.
+\item $i_0(\beta^0) = x^T\text{diag}\left\{e^{x_i}\right\}x = \begin{bmatrix} 1386.477 & 2362.725 \\ 2362.725 & 4037.512 \end{bmatrix}$
+\item $W = \text{diag}\left\{1\right\}$ as previously mentioned, and
+\end{itemize}
+
+\newpage
+
+I iterate once for step 2:
+```{r, include = TRUE}
+invI_0 <- solve(i_0)
+beta_1 <- c(0,1) + invI_0%*%c(-1 * e_xi + sum(timeFrame$X2),
+                          -1 * x_ie_exi + sum(timeFrameLog$X1 * timeFrame$X2))
+rownames(beta_1) <- c("b_0","b_1")
+beta_1
+```
+```{r, include = TRUE}
+S_11 <- -1 *sum(exp(data.matrix(timeFrameLog)%*% beta_1)) + sum(timeFrame$X2)
+S_11
+```
+
+\begin{itemize}
+\item $\beta^1 = \begin{bmatrix} -150.687 & 89.891 \end{bmatrix}$.
+\item 
+\end{itemize}
 \newpage
 
 # 5. Deviance
