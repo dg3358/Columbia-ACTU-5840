@@ -257,6 +257,7 @@ S_11
 \item $\beta^1 = \begin{bmatrix} -150.687 & 89.891 \end{bmatrix}$.
 \item 
 \end{itemize}
+
 \newpage
 
 # 5. Deviance
