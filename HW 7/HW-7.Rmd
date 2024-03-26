@@ -14,9 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## a. Showing pdf belongs to exponential family
 I can modify the p.d.f and show:
 \begin{align*} 
-f(y;\theta) &= \theta y^{-\theta - 1}\\
-&= \theta e^{\ln(y^{-\theta - 1})}\\
-&= \theta e^{-\ln(y)*\theta - \ln(y)}\\
+f(y;\theta) = \theta y^{-\theta - 1} = \theta e^{\ln(y^{-\theta - 1})} &= \theta e^{-\ln(y)*\theta - \ln(y)}\\
 &= e^{\ln(\theta)} * e^{-\ln(y)*\theta - \ln(y)}\\
 &= e^{-\ln(y)\theta + \ln(\theta) - \ln(y)}
 \end{align*}
@@ -39,8 +37,7 @@ The score function is just the derivative of the log-likelihood:
 $$
 S(\theta;y) = \frac{d}{d\theta}\ell(\theta;y) = -\ln(y) + \frac{1}{\theta}
 $$
-As this Pareto is in the EDF, $\mathbb{E}[S(\theta;y)] = 0$.\\
-The Fischer information is simply the expectation of the second derivative:
+As this Pareto is in the EDF, $\mathbb{E}[S(\theta;y)] = 0$. The Fischer information is simply the expectation of the second derivative:
 $$
 i(\theta) = -\mathbb{E}\left[\frac{d^2}{d\theta^2}\ell(\theta;y)\right] = -\mathbb{E}\left[-\frac{1}{\theta^2}\right] = \frac{1}{\theta^2}
 $$
@@ -48,6 +45,7 @@ $$
 ## d. Pareto distribution and Exponential Family
 
 ### i. Does it belong to the exponential family?
+$Y_i \text{ } \textbf{does belong}$ to the exponential family. It has the Pareto distribution with $\alpha = 1$, which we showed in (a) belongs to the Exponential family.
 
 ### ii. Is it a GLM?
 This model is $\textbf{NOT}$ a generalized linear model. The model is NOT linear in its parameters, so the systematic component does not match the $x^T \beta$ linear format.
@@ -264,19 +262,82 @@ S_11
 # 5. Deviance
 
 ## a. Calculating Deviance
+First, I calculate $\widehat{\ln(\theta)}=x^T\beta$:
+```{r, include = TRUE}
+design = data.matrix(cbind(c(1,1,1,1), c(1,0,1,1),
+               c(2.5,1.5,2.9,3.0),
+               c(6.25, 2.25, 8.41, 9),
+               c(1,1,1,0)))
+betaHat <- c(2.99, -0.27, -0.67, 0.16, 0.91)
+hatLnTheta <- design %*% betaHat
+hatLnTheta
+```
+Therefore, $\mathbb{E}[Y] = \theta = e^{\ln(\theta)}$
+
+```{r, include = TRUE}
+predMean <- exp(hatLnTheta)
+predMean
+```
+
+Note that unit deviance is:
+$$
+d(y;\theta) = 2\max_{\mu}\ell(\mu;y) - 2\ell(\mu;y)
+$$
+I derive $\hat{\mu}_{\text{M.L.E}}$ given an observed value $y$:
+\begin{align*}
+L(\theta;y) = \frac{e^{-\frac{y}{\theta}}}{\theta}
+&\rightarrow \ell(\theta;y) = -\frac{y}{\theta} - \ln(\theta)\\
+&\rightarrow \ell'(\theta;y) = \frac{y}{\theta^2} - \frac{1}{\theta} = 0\\
+&\rightarrow \theta^2\left(\frac{y}{\theta^2} - \frac{1}{\theta}\right) = 0 * \theta^2\\
+&\rightarrow y - \theta  = 0\\
+&\rightarrow \hat{\theta}_{\text{M.L.E}} = y
+\end{align*}
+Therefore, in this case:
+$$
+d(y;\hat{\theta}) = 2\left(\ell(y|y) - \ell(\hat{\theta}|y)\right) = 2\left(-1 - \ln(y) - \left(-\frac{y}{\hat{\theta}} - \ln(\hat{\theta})\right)\right)
+$$
+
+Using this formula, I calculate the unit deviance for each observation, and then sum them up:
+```{r, include = TRUE}
+ys <- c(15,85,10,40)
+unitD <- 2 * (-1 - log(ys) + (ys/predMean) + log(predMean))
+Deviance <- sum(unitD)
+sprintf("Deviance: %.4f", Deviance)
+```
 
 ## b. Calculating Pearson residual
+The formula for the pearson residual is $r_i = \frac{y_i - \hat{y_i}}{\sqrt{Var[\hat{y_i}]}} = \frac{y_i - \hat{y_i}}{\hat{y_i}}$. So, I calculate to get
+```{r,include = TRUE}
+pearson_2 <- (ys[2] - predMean[2])/predMean[2]
+sprintf("Pearson Residual: %.5f",pearson_2)
+```
 
 ## c. Calculating deviance residual
+The formula for the second deviance residual is $\text{sign}(y_i - \hat{y_i})\sqrt{d_i}$. So, I calculate:
+```{r, include = TRUE}
+dev2 <- sign(ys[2] - predMean[2])*sqrt(unitD[2])
+sprintf("Deviance Residual: %.5f", dev2)
+```
 
 \newpage
 
 # 6. Nominal Regression
 
 ## a. Odds ratio
+All else equal, the odds ratio of females is just $e^{\beta_{\text{Female, Van}}} = e^{-.18} = \mathbf{0.8353}$.
 
 ## b. Probability Calculation
+In this case, $\text{Female}_i = 0$ and $I_{\text{age < 25}} = 1$ and $I_{\text{age > 45}} = 0$. Therefore, from slide 12 in the Nominal and Ordinal regression slides, I calculate:
+$$
+\hat{\pi}_{\text{SUV}} = \frac{e^{x_{\text{SUV}}^T\hat{\beta}_{\text{SUV}}}}{1 + \sum_{j = 2}^Je^{x_{\text{J}}^T\hat{\beta}_{\text{SUV}}}} = \frac{e^{x_{\text{SUV}}^T\hat{\beta}_{\text{SUV}}}}{1 + e^{x_{\text{SUV}}^T\hat{\beta}_{\text{SUV}}} + e^{x_{\text{Van}}^T\hat{\beta}_{\text{Van}}}} = \frac{e^{0.18}}{1 + e^{0.18} + e^{-.11}} = \mathbf{0.387}
+$$
 
-\newpage
 
 # 7. Ordinal Regression
+As medium risk is the second category, I use the formula in slide 32 from the Nominal and ordinal regression slides:
+\begin{align*}
+\hat{\pi}_{2} &= \frac{e^{\hat{\eta}_2}}{1 + e^{\hat{\eta}_2}} - \frac{e^{\hat{\eta}_1}}{1 + e^{\hat{\eta}_1}}\\
+&= \frac{e^{2.05 - (-0.12)}}{1 + e^{2.05 - (-0.12)}} - \frac{e^{1.30 - 0.23}}{1 + e^{1.30 - 0.23}}\\
+&= \frac{e^{2.17}}{1 + e^{2.17}} - \frac{e^{1.07}}{1 + e^{1.07}}\\
+&= \mathbf{0.153}
+\end{align*}
