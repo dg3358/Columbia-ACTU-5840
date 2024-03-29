@@ -1,0 +1,87 @@
+---
+title: "Homework 8 - Predictive Modeling in Finance and Insurance"
+author: "Dennis Goldenberg"
+date: "2024-03-31"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = TRUE}
+library(readxl)
+library(ggplot2)
+library(patchwork)
+```
+
+# 1. Poisson Regression
+```{r, include = TRUE}
+claimsData <- read_excel("Table 9.13 Car insurance.xls", skip = 2, 
+                       sheet = "Sheet1", .name_repair = "unique_quiet")
+claimsData$age <- factor(claimsData$age)
+claimsData$district <- factor(claimsData$district)
+claimsData$car <- factor(claimsData$car)
+claimsData$y <- as.integer(claimsData$y)
+```
+
+## a. Exploratory Data Analysis
+I first plot the claims rate by age, and by car 
+```{r, include = TRUE}
+claimsData$claimRate <- claimsData$y/claimsData$n
+p1 <- ggplot(data = claimsData) + geom_point(aes(age, claimRate)) +
+  ylab("Claims Rate")
+p2 <- ggplot(data = claimsData) + geom_point(aes(car, claimRate)) +
+  theme(axis.title.y = element_blank())
+p1 + p2 + plot_annotation(title = "Claims Rate vs. Different Variables",
+                        theme = theme(plot.title = element_text(hjust = .5)))
+```
+Age does not seem to have a very significant impact on claims rate; if anything, there may be a potential slight negative correlation. However, the car variable has a strong positive correlation with claims rate; as the number of the car goes up, there is a noticeable shift in distribution of claims rates at each level. Next, I compare the boxplot of claims rate by district:
+```{r, include = TRUE}
+ggplot(data = claimsData) +
+  geom_boxplot(aes(x = claimRate, y = district, group = district)) + 
+  labs(title = "Box Plot of Claims rate by District") + 
+  xlab("Claim Rate") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+Note that district 0 and district 1 have about the same mean, but district 1's IQR is far larger (as is its overall range), suggesting that claims rates in district 1 have higher variance.
+
+## b. Scatterplot Generation
+```{r, include = TRUE}
+noInter <- glm(y ~ age + car + district + offset(log(n)),
+               family = poisson(link = 'log'),
+               data = claimsData)
+Inter <- glm(y ~ age + car + district + age*car + age*district +
+               car*district + offset(log(n)),
+               family = poisson(link = 'log'),
+               data = claimsData)
+summary(Inter)
+```
+
+### c. Fitting Model without Interactions
+
+\newpage
+
+# 2. Product binomial Distribution, Log-Linear
+
+## a. Proving simplification of algorithm
+
+## b. Proving log-linear equivalent to logistic
+
+## c. Fitting Logistic, log-linear fits
+
+\newpage
+
+# 3. Calculating estimated beta, log-linear
+
+# 4. Chi-squared Goodness of Fit
+
+## a. Calculate the sample mean.
+
+## b. Calculate the chi-square statistic
+
+# 5. Predictiions given fitted GLM
+
+## a. Calculate the predicted claim size
+
+## b. Calculate Variance of claim size
