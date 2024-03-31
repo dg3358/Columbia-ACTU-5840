@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, out.height='50%', out.width='50%', fig.align='center')
 ```
 
 ```{r, include = TRUE}
@@ -46,7 +46,8 @@ ggplot(data = claimsData) +
 ```
 Note that district 0 and district 1 have about the same mean, but district 1's IQR is far larger (as is its overall range), suggesting that claims rates in district 1 have higher variance.
 
-## b. Scatterplot Generation
+## b. Testing for significance of Poisson Regression
+I fit both models, and get their log likelihoods:
 ```{r, include = TRUE}
 noInter <- glm(y ~ age + car + district + offset(log(n)),
                family = poisson(link = 'log'),
@@ -55,24 +56,121 @@ Inter <- glm(y ~ age + car + district + age*car + age*district +
                car*district + offset(log(n)),
                family = poisson(link = 'log'),
                data = claimsData)
-summary(Inter)
+ll_noI <- as.numeric(logLik(noInter)) 
+ll_I <- as.numeric(logLik(Inter))
+sprintf("Log-Like - No Interactions: %.3f; Interactions: %.3f", ll_noI, ll_I)
+```
+Then, I note that $C = 2\left[\ell(\hat{\beta}_{\text{full}}) - \ell(\hat{\beta}_{\text{reduced}})\right] \sim \chi^2(q)$, where $q$ is the number of extra parameters in the model (in this case, the number of interactions is $15$). So, I calculate the test statistic, and I compare to the $\chi^2(15)$ distribution:
+
+```{r, include = TRUE}
+test1 <- 2 * (ll_I - ll_noI)
+pval <- pchisq(test1, df = 15, lower.tail = FALSE)
+sprintf("Test statistic: %.4f, p-value: %.4f", test1, pval)
+```
+Note that $\mathbb{P}(X^2 > \text{test}) = .2415 > .05$, so I fail to reject $H_0$; it seems as though the interaction terms are not jointly statistically significant.
+
+
+## c. Fitting Model without Interactions
+
+### i. Specify model, showing coefficients
+I transform the age and car variables back into numeric variables and fit the no interactions model again:
+```{r, include = TRUE}
+claimsData2 <- claimsData
+claimsData2$age <- as.numeric(claimsData2$age)
+claimsData2$car <- as.numeric(claimsData2$car)
+Inter2 <- glm(y ~ age + car + district + offset(log(n)),
+               family = poisson(link = 'log'),
+               data = claimsData2)
+Inter2$coefficients
 ```
 
-### c. Fitting Model without Interactions
+### ii. Calculating Goodness of Fit statistic
+I use the formula $X^2 = \sum_{i = 1}^{N}\frac{\left(o_i - e_i\right)^2}{e_i}$:
+```{r, include = TRUE}
+expect <- exp(predict.glm(Inter2))
+observe <- claimsData2$y
+test2 = sum((observe - expect)^2/expect)
+sprintf("Goodness of Fit Statistic: %.4f", test2)
+```
 
+### iii. Calcualting deviance statistic
+I use the formula $D = 2\sum_{i = 1}^{N}o_i * \log\left(\frac{o_i}{e_i}\right)$:
+```{r, include = TRUE}
+test3 <- 2 * sum(observe * log((observe + 0.000001)/expect))
+sprintf("Deviance Statistic: %.4f", test3)
+```
 \newpage
 
 # 2. Product binomial Distribution, Log-Linear
 
 ## a. Proving simplification of algorithm
+For arbitrary category $i$, let the distribution be modeled by $\text{Bernoulli}(\theta_{1i})$ where $\theta_{1i}$ is the probability of success. Then, since $y_{.i} = n_i$ is fixed, given independent trials, I deduce that the random variable $Z_i$ representing the number of successes in category $i$, is the sum of independent Bernoulli's - call them $X_{ij}$ - so:
+$$
+Z_i = \sum_{i = 1}^{n_i}X_{ij} \sim \text{Binomial}(n_i, \theta_{1i}) = \text{Binomial}(n_i, \pi_i)
+$$
+I assume each individual of the $K$ categories is independent as to their distribution of success and failure. Letting $z_k = y_{1k}$, I deduce:
+$$
+f(z_1,...z_K|n_1,....,n_K) = \prod_{k = 1}^{K}f_{Z_k}(z_k|n_k) = \prod_{k = 1}^{k}{n_k \choose z_k}\pi_k^{z_k}(1 - \pi_k)^{z_k}
+$$
 
 ## b. Proving log-linear equivalent to logistic
+Note that, as $Z_k \sim \text{Binomial}(n_k, \pi_k)$, I deduce that $\mathbb{E}[Z_k] = n_k\pi_k$. Therefore:
+$$
+\mathbb{E}[n_k - Z_k] = n_k - n_k\pi_k = n_k(1 - \pi_k)
+$$
+From this, and the information given in the problem:
+\begin{align*}
+&\log\left(\mathbb{E}[Z_k]\right) = x_{1k}^T \beta \rightarrow \log(n_k\pi_k) = x_{1k}^T\beta\\
+&\log\left(\mathbb{E}[n_k Z_k]\right) = x_{2k}^T\beta \rightarrow \log(n_k(1 - \pi_k)) = x_{2k}^T\beta
+\end{align*}
+
+From this:
+\begin{align*}
+x_k^T\beta &= \left(x^T_{1k} - x^T_{2k}\right)\beta\\
+&= x_{1k}^T\beta - x_{2k}^T\beta\\
+&= \log(n_k\pi_k) - \log(n_k(1 - \pi_k))\\
+&= \log\left(\frac{n_k\pi_k}{n_k(1 - \pi_k)}\right)\\
+&= \log\left(\frac{\pi_k}{1 - \pi_k}\right)
+\end{align*}
 
 ## c. Fitting Logistic, log-linear fits
+```{r, include = TRUE}
+medData <- read_excel("Table 9.7 Ulcer and aspirin use.xls", skip = 2, 
+                       sheet = "Sheet1", range = "A3:D11",
+                      .name_repair = "unique_quiet")
+medDataLogit <- medData
+medDataLogit$ulcer <- factor(medDataLogit$ulcer,
+                             levels = c("gastric","duodenal"),
+                             ordered = TRUE)
+medDataLogit
+```
 
 \newpage
 
 # 3. Calculating estimated beta, log-linear
+I define the following variables:
+$$
+x_{1i} = \begin{cases} 0 & \text{if Male} \\ 1 & \text{if Female}\end{cases} \text{ and } x_{2i} = \begin{cases} 0 & \text{if Q} \\ 1 & \text{if R}\end{cases}
+$$
+Therefore, using the predicted $\hat{\mu}$ values, I formulate 4 equations and 4 unknowns (implementing the values for $x_1$ and $x_2$ for each combination of categories):
+\begin{align*}
+&\log(148) = \hat{\beta_0}\\
+&\log(446) = \hat{\beta_0} + \hat{\beta_1}\\
+&\log(545) = \hat{\beta_0} + \hat{\beta_2}\\
+&\log(4024) = \hat{\beta_0} + \hat{\beta_1} + \hat{\beta_2} + \hat{\beta_3}
+\end{align*}
+Therefore:
+\begin{align*}
+&\hat{\beta_0} = \log(148)\\
+&\rightarrow \hat{\beta_1} = \log(446) - \hat{\beta_0} = \log(446) - \log(148) = \log\left(\frac{446}{148}\right)\\
+&\rightarrow \hat{\beta_2} = \log(545) - \hat{\beta_0} = \log(545) - \log(148) = \log\left(\frac{545}{148}\right)
+\end{align*}
+Therefore, $\hat{\beta}_3 = \log(4024) - \hat{\beta_0} - \hat{\beta_1} - \hat{\beta_2}$, the estimated coefficient for the interaction term, can be calculated:
+$$
+\hat{\beta_3} = \log(4024) - \log(148) - \log\left(\frac{446}{148}\right) - \log\left(\frac{545}{148}\right) = \log\left(\frac{4024}{\frac{446 * 545}{148}}\right) = \mathbf{0.3982}
+$$
+
+\newpage
 
 # 4. Chi-squared Goodness of Fit
 
@@ -80,7 +178,7 @@ summary(Inter)
 
 ## b. Calculate the chi-square statistic
 
-# 5. Predictiions given fitted GLM
+# 5. Predictions given fitted GLM
 
 ## a. Calculate the predicted claim size
 
