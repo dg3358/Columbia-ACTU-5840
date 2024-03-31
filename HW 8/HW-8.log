@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2024.1.29)  31 MAR 2024 16:24
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2024.1.29)  31 MAR 2024 18:10
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -695,20 +695,20 @@ Package amsmath Warning: Foreign command \atopwithdelims;
 (amsmath)                \frac or \genfrac should be used instead
 (amsmath)                 on input line 314.
 
-[4] [5] [6] (HW-8.aux)
+[4] [5] [6] [7] [8] (HW-8.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 13941 strings out of 474542
- 224313 string characters out of 5738746
+ 13949 strings out of 474542
+ 224389 string characters out of 5738746
  1939978 words of memory out of 5000000
  35827 multiletter control sequences out of 15000+600000
- 623338 words of font info for 124 fonts, out of 8000000 for 9000
+ 623587 words of font info for 127 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 83i,9n,93p,1003b,641s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 83i,20n,93p,1003b,641s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/Dennis Goldenberg/AppData/Local/Programs/MiKTeX/fonts/type1/public/
 lm/lmbx10.pfb><C:/Users/Dennis Goldenberg/AppData/Local/Programs/MiKTeX/fonts/t
 ype1/public/lm/lmbx12.pfb><C:/Users/Dennis Goldenberg/AppData/Local/Programs/Mi
@@ -728,9 +728,9 @@ Dennis Goldenberg/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtk10.pf
 b><C:/Users/Dennis Goldenberg/AppData/Local/Programs/MiKTeX/fonts/type1/public/
 lm/lmtt10.pfb><C:/Users/Dennis Goldenberg/AppData/Local/Programs/MiKTeX/fonts/t
 ype1/public/amsfonts/symbols/msbm10.pfb>
-Output written on HW-8.pdf (6 pages, 337270 bytes).
+Output written on HW-8.pdf (8 pages, 356924 bytes).
 PDF statistics:
- 242 PDF objects out of 1000 (max. 8388607)
- 43 named destinations out of 1000 (max. 500000)
+ 252 PDF objects out of 1000 (max. 8388607)
+ 45 named destinations out of 1000 (max. 500000)
  37019 words of extra memory for PDF output out of 42996 (max. 10000000)
 

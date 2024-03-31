@@ -134,6 +134,7 @@ x_k^T\beta &= \left(x^T_{1k} - x^T_{2k}\right)\beta\\
 \end{align*}
 
 ## c. Fitting Logistic, log-linear fits
+First, I generate and fit the three logit models:
 ```{r, include = TRUE}
 medData <- read_excel("Table 9.7 Ulcer and aspirin use.xls", skip = 2, 
                        sheet = "Sheet1", range = "A3:D11",
@@ -141,8 +142,15 @@ medData <- read_excel("Table 9.7 Ulcer and aspirin use.xls", skip = 2,
 medDataLogit <- medData
 medDataLogit$ulcer <- factor(medDataLogit$ulcer,
                              levels = c("gastric","duodenal"),
-                             ordered = TRUE)
-medDataLogit
+                             labels = c(0,1))
+medDataLogit$`case-control` <- factor(medDataLogit$`case-control`,
+                                      levels = c("control", "case"),
+                                      labels = c(0,1))
+medDataLogit$aspirin <- factor(medDataLogit$aspirin,
+                             levels = c("non-user", "user"),
+                             labels = c(0,1))
+medLogitmodel <- glm(frequency ~., data = medDataLogit, family = 'binomial')
+summary(medLogitmodel)
 ```
 
 \newpage
@@ -175,11 +183,74 @@ $$
 # 4. Chi-squared Goodness of Fit
 
 ## a. Calculate the sample mean.
+Let $c_i$ be the number of policies with $i$ claims. I calculate:
+$$
+\bar{Y} = \frac{c_0(0) + c_1(1) + c_2(2) + c_3(3)}{c_0 + c_1 + c_2 + c_3} = \frac{450 + 80(2) + 20(3)}{2600} = \mathbf{0.2577}
+$$
 
 ## b. Calculate the chi-square statistic
+I first derive the maximum likelihood parameter prediction:
+\begin{align*}
+&L(\lambda;\overrightarrow{y}) = \prod_{i = 1}^{n}f(y_i;\lambda) = \frac{e^{-n\lambda} * \lambda^{\sum_{i = 1}^{n}y_i}}{\prod_{i = 1}^{n}y_i!}\\
+&\rightarrow \ell(\lambda;\overrightarrow{y}) = -n\lambda + \ln(\lambda)\sum_{i = 1}^{n}y_i - \sum_{i = 1}^{n}\ln(y_i!)\\
+&\rightarrow \ell'(\lambda;\overrightarrow{y}) = -n + \frac{\sum_{i = 1}^{n}y_i}{\lambda} = 0\\
+&\rightarrow \frac{\sum_{i = 1}^{n}y_i}{\lambda} = n\\
+&\rightarrow \hat{\lambda}_{\text{M.L.E}} = \frac{\sum_{i = 1}^{n}y_i}{n} = \bar{Y}
+\end{align*}
+
+So $\hat{\lambda}_{\text{M.L.E}} = 0.2577$. Given the category breakdowns and the total number of policies, I calculate the expected number of claims:
+\begin{align*}
+&\mathbb{E}\left[\text{number of 0 claim policies}\right] = \mathbb{P}(y_i = 0) * n = e^{-.2577} * 2600 = 2009.366\\
+&\mathbb{E}[\text{number of 1 claim policies}] = \mathbb{P}(y_i = 1) * 2600 = .2577 * e^{-.2577} * 2600 = 517.798\\
+&\mathbb{E}[\text{2 claim policies}] = \mathbb{P}(y_i = 2) * 2600 = \frac{e^{-.2577} * .2577^2}{2} * 2600 = 66.716\\
+&\mathbb{E}[\text{3 claim policies}] = \mathbb{P}(y_i = 3) * 2600 = \frac{e^{-.2577} * .2577^3}{6} * 2600 = 5.731\\
+&\mathbb{E}[\text{4+ claim policies}] = \mathbb{P}(y_i > 3) * 2600 = \left(1 - \sum_{j = 0}^{3}\mathbb{P}(y_i = j)\right)*2600 = 0.389
+\end{align*}
+From these expected counts, and the observed counts given, I calculate the chi^2 statistic (letting $k$ iterate over the categories):
+\begin{align*}
+X^2 &= \sum_{k = 0}^{4}\frac{(o_i - e_i)^2}{e_i}\\
+&= \frac{(2050 - 2009.366)^2}{2009.366} + \frac{(450 - 517.798)^2}{517.798} + \frac{(80 - 66.716)^2}{66.716} + \frac{(20 - 5.731)^2}{5.731} + \frac{(0 - 0.389)^2}{0.389}\\
+&= \mathbf{48.296}
+\end{align*}
+
+\newpage
 
 # 5. Predictions given fitted GLM
 
 ## a. Calculate the predicted claim size
+Note that, with a dispersion parameter of $\alpha = 1$:
+$$
+\text{Claim Size} \sim \text{Exponential}\left(\hat{\theta}_{\text{M.L.E}}\right)
+$$
+Note that $\mathbb{E}[\text{Claim Size}] = \hat{\theta}_{\text{M.L.E}}$. Therefore, the model is as follows:
+\begin{align*}
+\ln\left(\hat{\theta}_{\text{M.L.E}}\right) &= \beta_0 + \beta_1x_{z1,i} + \beta_2x_{z2,i} + \beta_3x_{z3,i} + \beta_4x_{z5, i}\\
+&+ \beta_5x_{\text{convert, i}} + \beta_6x_{\text{coupe},i} + \beta_7x_{\text{truck},i} + \beta_8x_{\text{MV},i} + \beta_9x_{\text{SW},I} + \beta_{10}x_{\text{U},i}\\
+&+\beta_{11}I_{\text{age} < 30, i} + \beta_{12}I_{\text{age} > 50, i}
+\end{align*}
+Therefore, for an observation of zone 3, with a truck and an age of 55:
+\begin{align*}
+\mathbb{E}[\text{Claim Size}|\text{Zone 3, Truck, 55}] &= \hat{\theta}_{\text{M.L.E}}\\
+&= e^{\beta_0 + \beta_3 + \beta_7 + \beta_{12}}\\
+&= e^{2.1 + 1.336 + 1.406 + 1.8}\\
+&= \mathbf{766.627}
+\end{align*}
 
 ## b. Calculate Variance of claim size
+For an exponential distribution, or a gamma distribution with an $\alpha = 1$, the dispersion parameter in the G.L.M is equal to $\lambda = 1$. Therefore, as the predicted claim severity is equal to $\hat{\theta}$ and, since, for $Y \sim \text{Exponential}(\theta)$, $Var[Y] = \theta^2$:
+
+$$
+Var\left[\hat{\theta}|\text{Zone 4, Sedan, 35}\right] = 1 * Var[Y|\text{Zone 4, Sedan, 35}] = \hat{\theta}^2|\text{Zone 4, Sedan, 35}
+$$
+
+I first calculate the expected value:
+\begin{align*}
+\mathbb{E}[\text{Claim Size}|\text{Zone 4, Sedan, 35}] &= \hat{\theta}_{\text{M.L.E}}\\
+&= e^{\beta_0}\\
+&= e^{2.1}\\
+&= 8.166
+\end{align*}
+Therefore:
+$$
+Var\left[Y|\text{Zone 4, Sedan, 35}\right] = 8.166^2 = \mathbf{66.686}
+$$
