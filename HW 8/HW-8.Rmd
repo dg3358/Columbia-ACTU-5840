@@ -133,26 +133,44 @@ x_k^T\beta &= \left(x^T_{1k} - x^T_{2k}\right)\beta\\
 &= \log\left(\frac{\pi_k}{1 - \pi_k}\right)
 \end{align*}
 
+\newpage
 ## c. Fitting Logistic, log-linear fits
 First, I generate and fit the three logit models:
 ```{r, include = TRUE}
-medData <- read_excel("Table 9.7 Ulcer and aspirin use.xls", skip = 2, 
-                       sheet = "Sheet1", range = "A3:D11",
-                      .name_repair = "unique_quiet")
+medData <- read_excel("Table 9.7 Ulcer and aspirin use.xls", skip = 2,
+  sheet = "Sheet1", range = "A3:D11", .name_repair = "unique_quiet")
 medDataLogit <- medData
-medDataLogit$ulcer <- factor(medDataLogit$ulcer,
-                             levels = c("gastric","duodenal"),
-                             labels = c(0,1))
+medDataLogit$ulcer<-factor(medDataLogit$ulcer,levels = c("duodenal","gastric"),
+                              labels = c(0,1))
 medDataLogit$`case-control` <- factor(medDataLogit$`case-control`,
-                                      levels = c("control", "case"),
-                                      labels = c(0,1))
-medDataLogit$aspirin <- factor(medDataLogit$aspirin,
-                             levels = c("non-user", "user"),
-                             labels = c(0,1))
-medLogitmodel <- glm(frequency ~., data = medDataLogit, family = 'binomial')
-summary(medLogitmodel)
+  levels = c("control", "case"), labels = c(0,1))
+medDataLogit$aspirin<- factor(medDataLogit$aspirin,
+  levels = c("non-user", "user"), labels = c(0,1))
+medLogitmodel <- glm(`case-control` ~ ulcer + aspirin,
+  data = medDataLogit, weights = medDataLogit$frequency, family = 'binomial')
+probs <- medLogitmodel$fitted.values[c(5,8,3,4)]
+names(probs) <- c("Duo, noA", "Duo, A", "gas, noA", "gas, A")
+probs
 ```
 
+Now, I fit the log-linear model:
+```{r, include = TRUE}
+medData <- medData[,c("case-control", "ulcer", "aspirin", "frequency")]
+medTab <- xtabs(frequency ~ `case-control` + aspirin + ulcer,
+                data = medData)
+logLin <- loglin(medTab, margin = list(c(1,2), c(1,3), c(2,3)), fit = TRUE)
+logLin$fit
+```
+
+I now check the fitted values for the probabilities:
+```{r, include = TRUE}
+probsLogLin<-c(logLin$fit[1]/sum(logLin$fit[1:2]),
+ logLin$fit[3]/sum(logLin$fit[3:4]), logLin$fit[5]/sum(logLin$fit[5:6]),
+ logLin$fit[7]/sum(logLin$fit[7:8]))
+names(probsLogLin) <- c("Duo, noA", "Duo, A", "gas, noA", "gas, A")
+probsLogLin
+```
+Both models produce similar results for ulcer probability based on type and aspirin use.
 \newpage
 
 # 3. Calculating estimated beta, log-linear
