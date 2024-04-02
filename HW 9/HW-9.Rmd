@@ -9,9 +9,35 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+cbeDat <- read.table("cbe.dat", header = TRUE)
+```
+
 # 1. Exploratory Time Series Analysis
 
+\newpage
+
+
 # 2. Sample Autocorrelation
+The sample lag 2 autocorrelation formula is as follows:
+$$
+\hat{\rho}_2 = \frac{\sum_{t = 3}^{T}(y_t - \bar{y})(y_{t - 2} - \bar{y})}{\sum_{t = 1}^{T}(y_t - \bar{y})^2}
+$$
+Note that $\bar{y} = \frac{1 + 1.5 + 1.6 + 1.4 + 1.5 + 1.7}{6} = 1.45$. So, I calculate, using the numbers given:
+\begin{align*}
+\hat{\rho}_2 &= \frac{(1.6 - 1.45)(1 - 1.45) + (1.4 - 1.45)(1.5 - 1.45) + (1.5 - 1.45)(1.6 - 1.45) + (1.7- 1.45)(1.4 - 1.45)}{(1 - 1.45)^2 + (1.5 - 1.45)^2 + (1.6 - 1.45)^2 + (1.5 - 1.45)^2 + (1.7 - 1.45)^2}\\
+&= \frac{-.075}{0.2925} = \mathbf{-0.2564}
+\end{align*}
+
+```{r, include = TRUE}
+x <- c(1,1.5,1.6,1.4,1.5,1.7)
+lagx2 <- c(1,1.5,1.6,1.4)
+currx2 <- c(1.6,1.4,1.5,1.7)
+print(cor(lagx2,currx2))
+acf(x)[2]
+```
+
+\newpage
 
 # 3. Forecast error
 
