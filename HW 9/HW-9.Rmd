@@ -40,7 +40,34 @@ acf(x)[2]
 \newpage
 
 # 3. Forecast error
+Note that $y_{10} = y_0 + \sum_{i = 1}^{10}c_i$. Since $\bar{c}_{10} = 2$, this means that $\sum_{i = 1}^{10}c_i = 10 * \bar{c}_{10} = 10 * 2 = 20$. Therefore, $y_{10} = y_0 + 20$. From this, and the data given:
+$$
+y_{19} = y_0 + \sum_{i = 1}^{10}c_i + \sum_{i = 11}^{19}c_i = y_0 + 20 + 26 = y_0 + 46
+$$
+From the fact that all $c_t$ values are positive, this seems to be a random walk model with drift. Therefore, to develop the estimate of $\hat{y}_{19}$ from $\{y_i: i \in [10]\}$, I estimate the drift parameter $\delta$:
+$$
+\hat{\delta} = \mathbb{E}\left[\nabla y\right] = \bar{c}_{10} = 2
+$$
+Therefore, as $\text{Forecast steps} = \ell = 19 - 10 = 9$, I predict $\hat{y}_{19}$ from $y_10$:
+$$
+\hat{y}_{19} = y_{10} + \ell * \hat{\delta} = y_0 + 20 + 9 * 2 = y_0 + 38 
+$$
+Thus, the forecast error is:
+$$
+y_{19} - \hat{y}_{19} = \left(y_0 + 46\right) - \left(y_0 + 38\right) = \mathbf{8} 
+$$
+\newpage
 
 # 4. Forecast for AR(1) model
+I am given that $\bar{y} = 8.01$. I am also given that $\hat{\alpha} = -0.79$ as the estimated parameter from the model. Note that the mean is subtracted before the model is fit; therefore:
+$$
+\hat{y}_{9} - \bar{y} = \hat{\alpha}^{9 - 7}\left(y_{7} - \bar{y}\right)
+$$
+So, I solve for $\hat{y}_9$:
+$$
+\hat{y}_9 = \bar{y} + \hat{\alpha}^{9 - 7}(y_7 - \bar{y}) = 8.01 + (-.79)^2(8.5 - 8.01) = \mathbf{8.315809}
+$$
+
+\newpage
 
 # 5. Time Series, AutoRegression, GLS
