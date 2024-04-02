@@ -1,0 +1,20 @@
+---
+title: "Homework 9 - Predictive Modeling in Finance and Insurance"
+author: "Dennis Goldenberg"
+date: "2024-04-05"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Exploratory Time Series Analysis
+
+# 2. Sample Autocorrelation
+
+# 3. Forecast error
+
+# 4. Forecast for AR(1) model
+
+# 5. Time Series, AutoRegression, GLS
