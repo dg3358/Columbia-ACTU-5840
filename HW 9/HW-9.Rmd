@@ -6,14 +6,96 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,out.height='55%', out.width='55%', fig.align='center')
 ```
 
-```{r}
-cbeDat <- read.table("cbe.dat", header = TRUE)
+```{r, include = TRUE}
+suppressPackageStartupMessages(library(zoo, quietly = TRUE))
+library(ggplot2)
 ```
+
+
 
 # 1. Exploratory Time Series Analysis
+
+## a. EDA - time plot of the data
+I import the data and create a column to represent the month and year:
+```{r, include = TRUE}
+cbeDat <- read.table("cbe.dat", header = TRUE)
+cbeDat$month <- as.yearmon(seq(as.Date("1958-01-01"), as.Date("1990-12-01"), by = "months"))
+cbeDat <- cbeDat[,c(4,1,2,3)]
+```
+
+Then, I plot the aggregate annual series:
+```{r, include = TRUE}
+yearBeer <- c()
+i <- 0
+while(12 * i < dim(cbeDat)[1]){
+  yearBeer <- append(yearBeer, sum(cbeDat$beer[(12*i + 1):((12*i)+12)]))
+  i <- i + 1
+}
+sumDat <- as.data.frame(cbind(1958:1990, yearBeer))
+colnames(sumDat) <- c("Year", "Beer")
+ggplot(data = sumDat, aes(x = Year, y = Beer)) + geom_point() + geom_line() + 
+  ggtitle("Monthly Supply of Beer over the Years") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+The graph shows a relatively linear increase in Beer supply between the years 1960 and 1980 and then a bit of a drop off in the 80s. I then plot the box plots by season:
+
+```{r, include = FALSE}
+# pInYear <- as.numeric(cbeDat$month) - floor(as.numeric(cbeDat$month))
+# season <- numeric(dim(cbeDat)[1]) + 
+#   as.numeric(pInYear >= 2/12 & pInYear <= 4/12) + 
+#   2 * as.numeric(pInYear >= 5/12 & pInYear <= 7/12) + 
+#   3 * as.numeric(pInYear >= 8/12 & pInYear <= 10/12)
+# season <- factor(season, levels = c(0,1,2,3), labels = 
+#                    c("Winter", "Spring", "Summer", "Fall"))
+# seasonDat <- as.data.frame(cbind(season, cbeDat$beer))
+# colnames(seasonDat) <- c("Season", "Beer")
+# ggplot(data = seasonDat) + 
+#   geom_boxplot(aes(x = Beer, y = Season, group = Season)) + 
+#   scale_y_continuous(breaks = seq(1, 4), labels = levels(season)) + 
+#   ggtitle("Distribution of Monthly Beer Supply by Season") +
+#   theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, include = TRUE}
+monthD <- as.numeric(substring(as.character(cbeDat$month), 1,3) == "Feb") +
+  2 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Mar") +
+  3 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Apr") + 
+  4 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "May") + 
+  5 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Jun") + 
+  6 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Jul") + 
+  7 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Aug") + 
+  8 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Sep") + 
+  9 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Oct") + 
+  10 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Nov") + 
+  11 * as.numeric(substring(as.character(cbeDat$month), 1,3) == "Dec")
+monthD <- factor(monthD, levels = 0:11, labels = 
+  c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
+seasonDat <- as.data.frame(cbind(monthD, cbeDat$beer))
+colnames(seasonDat) <- c("Month", "Beer")
+ggplot(data = seasonDat) +
+  geom_boxplot(aes(x = Beer, y = Month, group = Month)) +
+  scale_y_continuous(breaks = seq(1, 12), labels = levels(monthD)) +
+  ggtitle("Distribution of Monthly Beer Supply by Month") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+The supply of beer seems, on average, to be highest at the end of the year (October, November, December) and lowest in the summer Months, particularly in June. The Spring months have means in between the summer and the winter months, indicating some seasonality.
+
+## b. Decomposition Using two methods
+```{r, include = TRUE}
+beer.month.ts <- ts(cbeDat$beer, start = 1958, freq = 12)
+plot(decompose(beer.month.ts, type="add"))
+```
+
+```{r, include = TRUE}
+plot(decompose(beer.month.ts, type="mul"))
+```
+
+
+## c. Comparison of Decomposition methods
+Note that, via the observed graph, the seasonal variation tends to increase over time. This suggests that the multiplicative model is better; also, when examining the randomness, the multiplicative model seems to display more stationarity in variance than the additive model; thus the multplicative model is likely a better fit in this case. 
 
 \newpage
 
@@ -63,3 +145,20 @@ $$
 \newpage
 
 # 5. Time Series, AutoRegression, GLS
+```{r, include = TRUE}
+globDat <- read.table("Global.dat", header = FALSE)
+colnames(globDat) <- c("Jan", "Feb", "Mar", "Apr", "Jun", "Jul",
+                       "Aug", "Sep", "Oct", "Nov", "Dec")
+#rowMeans(as.matrix(globDat))
+```
+## a. Annual Temperature Plot
+
+## b. Plotting new series average annual temperature
+
+## c. Fitting Regression model with time component
+
+## d. Esimating autocorrelation
+
+## e. Fitting GLS model with AR(1) residual
+
+## f.  overlaying GLS fitted series to answer in b
