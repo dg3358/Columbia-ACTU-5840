@@ -95,7 +95,7 @@ plot(decompose(beer.month.ts, type="mul"))
 
 
 ## c. Comparison of Decomposition methods
-Note that, via the observed graph, the seasonal variation tends to increase over time. This suggests that the multiplicative model is better; also, when examining the randomness, the multiplicative model seems to display more stationarity in variance than the additive model; thus the multplicative model is likely a better fit in this case. 
+Note that, via the observed graph, the seasonal variation tends to increase over time. This suggests that the multiplicative model is better; also, when examining the randomness, the multiplicative model seems to display more stationarity in variance than the additive model; thus the multiplicative model is likely a better fit in this case. 
 
 \newpage
 
@@ -149,16 +149,97 @@ $$
 globDat <- read.table("Global.dat", header = FALSE)
 colnames(globDat) <- c("Jan", "Feb", "Mar", "Apr", "Jun", "Jul",
                        "Aug", "Sep", "Oct", "Nov", "Dec")
-#rowMeans(as.matrix(globDat))
+means <- rowMeans(as.matrix(globDat))
+year <- 1856:2005
+dataGlob <- as.data.frame(cbind(year, means,globDat))
 ```
+
 ## a. Annual Temperature Plot
+I plot the annual temperature from 1900 to 2005:
+```{r, include = TRUE}
+ggplot(data = dataGlob[(1900-1855):(2005-1855),],aes(x = year, y = means)) + 
+  geom_point() + geom_line() + ylab("Annual Mean Temperature") + 
+  ggtitle("Global Annual Average Mean Temperature, 1900-2005") + 
+  scale_x_continuous(breaks = seq(1900, 2005, by = 10)) + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
 
 ## b. Plotting new series average annual temperature
+```{r, include = TRUE, message = FALSE}
+ggplot(data = dataGlob[(1950-1855):(2005-1855),], aes(x = year, y = means)) +
+  geom_point() + geom_smooth(method = 'lm', se = FALSE) +  
+  ggtitle("Global Annual Average Mean Temperature, 1950-2005") + 
+  scale_x_continuous(breaks = seq(1900, 2005, by = 10)) + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+There seems to be a clear upward trajectory in mean average global temperature as the years pass.
 
 ## c. Fitting Regression model with time component
+I fit the desired linear regression, setting $t$ as the number of years since 1950:
+```{r, include = TRUE}
+dataReg <- dataGlob[(1950-1855):(2005-1855),]
+dataReg$year <- dataReg$year - 1950
+regTime <- lm("means ~ year", data = dataReg)
+regTime$coefficients
+```
+
+I get the 95\% confidence interval using the coefficients:
+```{r, include = TRUE}
+stdErrors <- summary(regTime)$coefficients[,2]
+CI <- cbind(regTime$coefficients - 1.96 * stdErrors,
+      regTime$coefficients + 1.96 * stdErrors)
+colnames(CI) <- c("Lower CI", "Upper CI")
+CI
+```
 
 ## d. Esimating autocorrelation
+I use the formula for autocorrelation of the residuals:
+$$
+\hat{\rho}_1 = \frac{\sum_{t = 2}^{T}(z_t - \bar{z})(z_{t - 1} - \bar{z})}{\sum_{t = 1}^{T}(z_t - \bar{z})^2}
+$$
+
+```{r, include = TRUE}
+m <- regTime$residuals
+lag <- m[1:length(m) - 1] - mean(m)
+curr <- m[2:length(m)] - mean(m)
+numer <- (lag %*% curr)[1,1]
+denom <- (t(m - mean(m)) %*% (m - mean(m)))[1,1]
+rho_1 <- numer/denom
+sprintf("Prediction for correlation lag 1: %.3f", rho_1)
+```
+
+
 
 ## e. Fitting GLS model with AR(1) residual
+I run the model and get the coefficients:
+```{r, include = TRUE}
+library(nlme)
+gls1 <- gls(model = means ~ year, data = dataReg, correlation = corAR1())
+gls1$coefficients
+```
+Then, using standard error, I get the confidence intervals:
+```{r, include = TRUE}
+stdErrors2 <- summary(gls1)$tTable[,c("Std.Error")]
+CI2 <- cbind(gls1$coefficients - 1.96 * stdErrors2,
+      gls1$coefficients + 1.96 * stdErrors2)
+colnames(CI2) <- c("Lower CI", "Upper CI")
+CI2
+```
 
 ## f.  overlaying GLS fitted series to answer in b
+I generate the GLS fitted series, and then overlay:
+```{r, include = TRUE}
+finData <- dataReg[,c("year", "means")]
+finData$lmPred <- regTime$coefficients[1] +
+  regTime$coefficients[2]*finData$year
+finData$glsPred <- gls1$coefficients[1] + gls1$coefficients[2]*finData$year
+ggplot(data = finData) + geom_point(aes(year, means)) + 
+  geom_line(aes(year, lmPred, color = 'LinReg'), linewidth = 1.2) + 
+  geom_line(aes(year, glsPred, color = 'AutoReg'), linewidth = 1.2) + 
+  scale_color_manual(name = "Regression Type", values = c("red", "blue")) +
+  scale_x_continuous(breaks=seq(0,50,by = 10),labels = seq(1950,2000,by = 10))+
+  ggtitle("Mean Annual Global Temperature, Linear and AR(1) Regression")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+It is notable that the linear regression and autocorrelation produce very similar results, with the auto regression line being very slightly steeper.
