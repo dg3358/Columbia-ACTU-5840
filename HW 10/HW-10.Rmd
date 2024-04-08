@@ -1,0 +1,52 @@
+---
+title: "Homework 10 - Predictive Modeling in Finance and Insurance"
+author: "Dennis Goldenberg"
+date: "2024-04-11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Building a decision tree
+
+## a. Determining roots and first split
+
+## b. Determining second split
+
+## c. Complete decision tree build
+
+## d. depict entire tree
+
+## e. Predicintg weight for male, height 1.45 m
+
+## f. What is sequence of $\alpha_T$?
+
+\newpage
+
+# 2. Building Decision Tree with Train-Test Split
+
+## a. Splitting dataset
+
+## b. Building decision tree
+
+## c. Building Bagging Model
+
+## d. Building Random Forest
+
+## e. Building boosted tree
+
+\newpage
+
+# 3. Gradient Boosted Tree for Q1 data
+
+## a. Building the First tree
+
+## b. Creating the 2nd tree
+
+## c. Creating the 3rd tree
+
+## d. Drawing whole gradient boosted tree
+
+## e. Predicting weight for male with height 1.45m
