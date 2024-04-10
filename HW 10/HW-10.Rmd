@@ -148,11 +148,88 @@ $$
 
 # 2. Building Decision Tree with Train-Test Split
 
+```{r, include = TRUE, warning = FALSE, message = FALSE}
+library(MASS)
+library(randomForest)
+library(rpart)
+library(rpart.plot)
+library(tree)
+```
+
 ## a. Splitting dataset
+```{r, include = TRUE}
+set.seed(1)
+train_sample <- sort(sample(seq_len(nrow(Boston)),
+                      size = floor(0.5 * nrow(Boston))))
+trainData <- Boston[train_sample,]
+testData <- Boston[-train_sample,]
+```
 
 ## b. Building decision tree
 
+### i. Fitting Regression Tree
+```{r, include = TRUE}
+rtree <- rpart(medv ~ ., data = trainData, method = "anova")
+prp(rtree, main = "Regression Tree for Median Home Value", roundint = FALSE,
+    extra = 1, digits = 4, branch.lty = 3)
+```
+Note that the number of rooms is split on first, as well as being the only variable split on multiple times. So, $\textit{rm}$ is the most important variable. The other variables split on (ordered by depth in tree at which they are split on) are $\textit{lstat}$, $\textit{crim}$, and $\textit{age}$. So the order of importance for variables is $1. \textit{rm}, 2. \textit{lstat},3.\textit{crim},4.\textit{age}$.
+
+### ii. Calculating test MSE
+I predict using the fitted tree, and calculate test MSE:
+```{r, include = TRUE}
+predictions <- predict(rtree, newdata = testData)
+SSE <- sum((predictions - testData$medv)^2)
+MSE = SSE/(length(predictions))
+sprintf("Test MSE: %.5f", MSE)
+```
+
+### iii. Cross-Validation for optimal Tree
+I do 10-fold cross validation and plot the deviance (note that I use the tree method instead of rpart, as rpart plots better):
+```{r, include=TRUE}
+set.seed(1)
+rtree <- tree(medv ~ ., data = trainData)
+cv <- cv.tree(rtree, K = 10, FUN = prune.tree)
+par(oma = c(0,0,2,0))
+plot(cv)
+title(main = "Deviance of Tree vs. Number of Leaves, corresponding alpha",
+      outer = TRUE)
+```
+
+The deviance is very close between the tree with 6 leaves and 7 leaves. I calculate the size of the tree with minimum deviance:
+```{r, include = TRUE}
+minD <- cv$size[which.min(cv$dev)]
+sprintf("Size of tree with minimum deviance: %.0f", minD)
+```
+
+### iv. Pruning the tree
+Since the tree with the lowest deviance is the the full tree, no pruning is necessary.
+I re-plot the same tree:
+```{r, include = TRUE}
+replot <- rpart(medv ~ ., data = trainData, method = "anova")
+prp(replot, main = "Pruned Regression Tree for Median Home Value", roundint = FALSE,
+    extra = 1, digits = 4, branch.lty = 3)
+```
+
+### v. Test error
+The test error is the same as before, as the tree is the same as before: $\text{MSE} = 35.28688$.
+
 ## c. Building Bagging Model
+I create the bagged model, and calculate the test MSE:
+```{r, include = TRUE}
+set.seed(1)
+rF <- randomForest(medv ~., ntree = 500, data = trainData, importance = TRUE)
+predictionsrF <- predict(rF, newdata = testData)
+MSErF <- mean((predictionsrF - testData$medv)^2)
+sprintf("Test MSE of Bagged Model: %.5f", MSErF)
+```
+
+I also return the top three variables in importance as measured by the mean decrease in MSE:
+```{r, include = TRUE}
+sortedImportance <- sort(rF$importance[,2], decreasing = TRUE)
+sortedImportance[1:3]
+```
+So, this suggests that $\textit{rm}, \textit{lstat}, \text{ and } \textit{ptratio}$ are the 3 most important variables in decreasing MSE.
 
 ## d. Building Random Forest
 
