@@ -303,6 +303,7 @@ mseSum <- as.data.frame(cbind(c("Base Boosted Model", "Boosted + Optimal depth",
                                 "Boosted + Optimal depth and shrinkage"),
                               unname(c(MSEgB, optDMSE, optLMSE))))
 colnames(mseSum) <- c("Model Specifications", "Test MSE")
+mseSum$`Test MSE` <- as.numeric(mseSum$`Test MSE`)
 mseSum
 ```
 With each optimization of parameters, the test MSE was reduced, improving the overall accuracy of the model.
@@ -384,12 +385,54 @@ resid2
 
 Now, I fit the tree again, fitting on the residuals of tree number 2. I examine each potential split:
 \begin{itemize}
-\item Splitting on $\text{Height} \leq 1.4$: In this case, the left child has one data point, data point 6; the mean response is just $\bar{y}_l = y_6 = -16.963$, so $SSE_{l} = 0$. The other side contains the other 6 points; here the mean response is $\bar{y}_r = \frac{13.712 + 7.712 - 11.963 - 1.288 + 3.127 + 5.712}{6} = 2.835$. Thus, $SSE_r = \sum_{i \in R}(y_i - \bar{y}_r)^2 = 386.44$. Therefore, $SSE = 0 + 459.33 = 386.44$.
-\item Splitting on $\text{Height} \leq 1.5$: In this case, the left child has 3 data points: 3, 5, and 6. Therefore, the mean response is $\bar{y}_l = \frac{-13.57 + 3.43 - 18.57}{3} = -9.57$. Therefore, $SSE_l = \sum_{i \in L}(y_i - \bar{y}_l)^2 = 266$. The other side contains the other 4 data points, and the mean response is $\bar{y}_r = \frac{14.43 + 8.43 - 0.57 + 6.43}{4} = 7.18$. Here, $SSE_R = \sum_{i \in R}(y_i - \bar{y}_r)^2 = 114.75$. So, $SSE = 266 + 114.75 = 380.75$.
-\item Splitting on $\text{Height} \leq 1.6$: In this case, the left child has 4 data points: 1,3,5, and 6. The mean response is $\bar{y}_l = \frac{14.43 -13.57 + 3.43 - 18.57}{4} = -3.57$. Consequently, $SSE_l = \sum_{i \in L}(y_i - \bar{y}_l)^2 = 698$. Then, the right child has 3 data points: 2, 4, and 7. The mean response is $\bar{y}_r = \frac{8.43 - 0.57 +6.43}{3} = 4.76$. So, $SSE_r = \sum_{i \in R}(y_i - \bar{y}_r)^2 = 44.67$. Finally, $SSE = 698 + 44.67 = 742.67$.
-\item Splitting on $\text{Height} \leq 1.7$: In this case, the left child has 6 data points: 1,2,3,5,6,7. The mean response is $\bar{y}_l = \frac{14.43 + 8.43 - 13.57 + 3.43 - 18.57 +6.43}{6} = 0.10$. Then, $SSE_l = \sum_{i \in L}(y_i - \bar{y}_l)^2 = 861.33$. The right child only has one data point: point 4. So, the mean response is $\bar{y}_r = y_4 = -0.57$, and $SSE_r = 0$. Finally, $SSE = 861.33 + 0 = 861.33$.
-\item Splitting on $\text{Gender} < 0.5$: Encode $\{M: 0, F: 1\}$. Thus, all males (points 1,4,5, 7) are in the left child, and all females (points 2,3, 6) are in the right child. Thus, $\bar{y}_l = \frac{14.43 - 0.57 + 3.43 + 6.43}{4} = 5.93$, and $SSE_l = \sum_{i \in L}(y_i - \bar{y}_l)^2 = 121$. Similarly, $\bar{y}_r = \frac{8.43 - 13.57 - 18.57}{3} = -7.90$ and $SSE_r = \sum_{i \in R}(y_i - \bar{y}_r)^2 = 412.67$. Thus, $SSE = 121 + 412.67 = 533.67$.
+\item Splitting on $\text{Height} \leq 1.4$: In this case, the left child has one data point, data point 6; the mean response is just $\bar{y}_l = y_6 = -16.963$, so $SSE_{l} = 0$. The other side contains the other 6 points; here the mean response is $\bar{y}_r = \frac{13.712 + 7.712 - 11.963 - 1.288 + 3.127 + 5.712}{6} = 2.835$. Thus, $SSE_r = \sum_{i \in R}(y_i - \bar{y}_r)^2 = 386.44$. Therefore, $SSE = 0 + 386.44 = 386.44$.
+\item Splitting on $\text{Height} \leq 1.5$: In this case, the left child has 3 data points: 3, 5, and 6. Therefore, the mean response is $\bar{y}_l = \frac{-11.963 + 3.127 - 16.963}{3} = -8.6$. Therefore, $SSE_l = \sum_{i \in L}(y_i - \bar{y}_l)^2 = 218.77$. The other side contains the other 4 data points, and the mean response is $\bar{y}_r = \frac{13.712 + 7.712 - 1.288 + 5.712}{4} = 6.462$. Here, $SSE_R = \sum_{i \in R}(y_i - \bar{y}_r)^2 = 114.75$. So, $SSE = 218.77 + 114.75 = 333.52$.
+\item Splitting on $\text{Height} \leq 1.6$: In this case, the left child has 4 data points: 1,3,5, and 6. The mean response is $\bar{y}_l = \frac{13.712 - 11.963 + 3.127 - 16.963}{4} = -3.022$. Consequently, $SSE_l = \sum_{i \in L}(y_i - \bar{y}_l)^2 = 592.13$. Then, the right child has 3 data points: 2, 4, and 7. The mean response is $\bar{y}_r = \frac{7.712 - 1.288 + 5.712}{3} = 4.045$. So, $SSE_r = \sum_{i \in R}(y_i - \bar{y}_r)^2 = 44.67$. Finally, $SSE = 592.13 + 44.67 = 636.80$.
+\item Splitting on $\text{Height} \leq 1.7$: In this case, the left child has 6 data points: 1,2,3,5,6,7. The mean response is $\bar{y}_l = \frac{13.712 + 7.712 -11.963 + 3.127 - 16.963 + 5.712}{6} = 0.223$. Then, $SSE_l = \sum_{i \in L}(y_i - \bar{y}_l)^2 = 720.46$. The right child only has one data point: point 4. So, the mean response is $\bar{y}_r = y_4 = -0.57$, and $SSE_r = 0$. Finally, $SSE = 720.46 + 0 = 720.46$.
+\item Splitting on $\text{Gender} < 0.5$: Encode $\{M: 0, F: 1\}$. Thus, all males (points 1,4,5, 7) are in the left child, and all females (points 2,3, 6) are in the right child. Thus, $\bar{y}_l = \frac{13.712 - 1.288 + 3.127 + 5.712}{4} = 5.316$, and $SSE_l = \sum_{i \in L}(y_i - \bar{y}_l)^2 = 119.05$. Similarly, $\bar{y}_r = \frac{7.712 - 11.963 - 16.963}{3} = -7.071$ and $SSE_r = \sum_{i \in R}(y_i - \bar{y}_r)^2 = 340.32$. Thus, $SSE = 119.05 + 340.32 = 459.37$.
 \end{itemize}
+I summarize in the table below:
+\begin{center}
+\begin{tabular}{c|c|c|c|c|c}
+Split & Points in L & Points in R & $SSE_l$ & $SSE_r$ & $SSE$\\
+\hline\hline
+$\text{Height} \leq 1.4$ & 6 & 1,2,3,4,5,7 & $0$ & $386.44$ & $386.44$\\
+\hline
+$\text{Height} \leq 1.5$ & 3,5,6 & 1,2,4,7 & $218.77$ & $114.75$ & $333.52$\\
+\hline
+$\text{Height} \leq 1.6$ & 1,3,5,6 & 2,4,7 & $592.13$ & $44.67$ & $636.80$\\
+\hline
+$\text{Height} \leq 1.7$ & 1,2,3,5,6,7 & 4 & $720.46$ & $0$ & $720.46$\\
+\hline
+$\text{Gender} < 0.5$ & 1,4,5,7 & 2,3,6 & $119.05$ & $340.32$ & $459.37$
+\end{tabular}
+\end{center}
+Note that the lowest remaining SSE after split belongs to the split corresponding with $\mathbf{\text{Height} \leq 1.5}$. So, leaf $L$ contains $3,5,6$ and leaf $R$ contains $1,2,4,7$ after the first split. Note that $SSE_L = 218.77 > 114.75 = SSE_R$. Therefore, if I were to find a split among the three data points in leaf $L$ whose decrease in SSE was greater than $SSE_R$, I know that this is the optimal second split. Data points $3,5,6$ have heights $\{1.4,1.5\}$ and genders $\{M,F\}$. Therefore, there is one potential split on height and one potential split on gender; I examine both (calling the resulting leaves $L_1$ and $L_2$):
+\begin{itemize}
+\item Splitting on $\text{Height} \leq 1.4$: Only observation 6 fits this criteria; therefore, $\bar{y}_{L_1} = y_6 = -16.963$ and $SSE_{L_1} = 0$. Then, observations 3 and 5 are in $L_2$, so $\bar{y}_{L_2} = \frac{-11.963	+ 3.127}{2} = -4.418$. Thus, $SSE_{L_2} = \sum_{i \in L_2}(y_i - \bar{y}_{L_2})^2 = 113.85$. So, $SSE_{\text{tot}} = 0 + 113.85 = 113.85$.
+\item Splitting on $\text{Gender} < 0.5$: Only observation 5 is male of the 3 observations in $L$; therefore, $\bar{y}_{L_1} = y_5 = 3.127$ and $SSE_{L_1} = 0$. Then, observations 3 and 6 are female and in $L_2$. Thus, $\bar{y}_{L_2} = \frac{-11.963 - 16.963}{2} = -14.463$ and $SSE_{L_2} = \sum_{i \in L_2}(y_i - \bar{y}_{L_2})^2 = 12.5$. Thus $SSE_{\text{tot}} = 0 + 12.5 = 12.5$.
+\end{itemize}
+Thus, splitting on $\text{Gender} < 0.5$ is the best split among data in Leaf $L$ and $218.77 - 12.5 = 206.27 > 114.75$ so the reduction in $SSE$ is greater than the entirety of the $SSE$ in leaf $R$; thus, the split on leaf $L$ on $\mathbf{\text{Gender} < 0.5}$ is the optimal second split. After this split, there are 3 leaves, so the third tree is completed - note that the leaves are grouped exactly the same as they were in the second tree. Therefore, I summarize the leaves, the observations in each leaf, and the updated weight prediction for the leaves ($\hat{y}_{\text{Tree}_3} = \hat{y}_{\text{Tree}_2} + 0.1*\text{pred}(\text{Resid}_2)$):
+\begin{center}
+\begin{tabular}{c|c|c|c}
+Leaf Name & Data points in leaf & Prediction for $\text{Resid}_2$ & Updated Weight Prediction\\
+\hline\hline
+$L_1$ & 5 & $3.127$ & $73.873 + 0.1(3.127) = \mathbf{74.1857}$\\
+\hline
+$L_2$ & 3,6 & $-14.463$ & $71.963 + 0.1(-14.463) = \mathbf{70.5167}$\\
+\hline
+$R$ & 1,2,4,7 & $6.462$ & $74.288 + 0.1(6.462) = \mathbf{74.9342}$
+\end{tabular}
+\end{center}
+
+I find the residuals of the third tree:
+```{r, include = TRUE}
+pred3 <- c(74.9342, 74.9342, 70.5167, 74.9342, 74.1857, 70.5167, 74.9342)
+resid3 <- resid2
+resid3$Residual <- Weight - pred3
+resid3
+```
+
 ## d. Drawing whole gradient boosted tree
 
 ## e. Predicting weight for male with height 1.45m
