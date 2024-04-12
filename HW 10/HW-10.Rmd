@@ -434,5 +434,15 @@ resid3
 ```
 
 ## d. Drawing whole gradient boosted tree
-
+To get the Sum of Squared Errors for each leaf, I take the sum of squared residuals:
+\begin{itemize}
+\item $SSE_{L_1} = \sum_{i \in L_1}e_{\text{tree 3},i}^2= 2.8143^2 = 7.92$
+\item $SSE_{L_2} = \sum_{i \in L_2}e_{\text{tree 3},i}^2 = (-10.5167)^2 + (-15.5167)^2 = 351.37$
+\item $SSE_{R} = \sum_{i \in R}e_{\text{tree 3},i}^2 = 13.0658^2 + 7.0658^2 + (-1.9342)^2 + 5.0658^2 = 250.04$
+\end{itemize}
+Using this information, I plot the final, boosted tree:
+```{r, include = TRUE, out.height = '60%', out.width = '75%', fig.align = 'center'}
+knitr::include_graphics("tree3.jpg")
+```
 ## e. Predicting weight for male with height 1.45m
+In this case, I would predict that $\hat{y}(\text{M, 1.45}) = 74.1857$. This is exactly what I found in part d, because both trees 2 and 3 had the exact same splits, which means tree 3 and the total, gradient boosted tree are exactly the same.
