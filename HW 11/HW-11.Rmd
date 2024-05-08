@@ -1,0 +1,54 @@
+---
+title: "HW-11"
+author: "Dennis Goldenberg"
+date: "2024-04-25"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. PCA
+
+## a. Contructing covariance matrix
+
+## b. Finding eigenvectors, eigenvalues
+
+## c. Finding principal components
+
+## d. Calculating PVE (percent of variation explained)
+
+## e. Repeat steps b-d in R
+
+## f. Compare b-d, e results
+
+## g. Plotting two PCs
+
+
+# 2. Hierarchical Clustering
+
+## a. Building dendogram
+
+## b. Proportion of variation for 2 groups
+
+## c. Use R for a-b
+
+
+# 3. K-means Clustering
+
+## a. Find two clusters manually
+
+## b. Use R to randomly perform K-means using 2 clusters
+
+# 4. Fun with PCA
+
+## a. Calculating 1st principal component score, Obs. 1
+
+## b. Calcualting 2nd principal component score, Obs. 2
+
+## c. Approximating $x_{i4}$ by first two PCs
+
+## d. Approximation error of $x_{i3}$ by first two PCs
+
+## e. Distance between first observation, approximation by first two Pcs
