@@ -10,21 +10,158 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # 1. PCA
+```{r, include = TRUE}
+#read in data
+data = as.data.frame(cbind(c(2.7,0.75, 2.25, 1.9, 4.0, 2.3),
+                          c(2.5,1,4,2.25,2.5, 2.7)))
+colnames(data) <- c("X1", "X2")
+```
 
 ## a. Contructing covariance matrix
+I first find the means of the two variables:
+```{r, include = TRUE}
+X_1m = mean(data$X1)
+X_2m = mean(data$X2)
+sprintf("mean of X_1: %.4f", X_1m)
+sprintf("mean of X_2: %.4f", X_2m)
+```
+
+I subtract these means from the original data to get the centered data:
+```{r, include = TRUE}
+data$X1 <- data$X1 - X_1m
+data$X2 <- data$X2 - X_2m
+data
+```
+```{r, include = TRUE}
+var_covar <- cov(data)
+var_covar
+```
 
 ## b. Finding eigenvectors, eigenvalues
+I find the eigenvalues by solving the following equation:
+$$
+\det\{\Sigma_x - \lambda I \} = 0
+$$
+Therefore:
+\begin{align*}
+\det\{\Sigma_x - \lambda I \} = 0 & \rightarrow (1.123 - \lambda)(.920 - \lambda) - .47^2 = 0\\
+&\rightarrow 1.12267(.92042) - (1.12267 + .92042)\lambda + \lambda^2 - .47017^2 = 0\\
+&\rightarrow \lambda^2 - 2.043\lambda + .8124 = 0\\
+&\rightarrow \lambda = \frac{2.04309 \pm \sqrt{2.04309^2 - 4 * .81227}}{2}\\
+&\rightarrow \lambda = \mathbf{1.5025} \text{, } \mathbf{0.5406} 
+\end{align*}
+For the first eigenvector, I know that $(A - 1.5025I)v_1 = \overrightarrow{0}$. Therefore, I solve for the vector $v_1$:
+\begin{align*}
+&(A - 1.5025I)v_1 = \overrightarrow{0}\\
+&\rightarrow \begin{pmatrix}
+-.37983 & .47017\\
+.47017 & -.58208
+\end{pmatrix}v_1 = \overrightarrow{0}\\
+&\rightarrow -.37983v_{1,1} + .47017v_{1,2} = 0 \text{ and } .47017v_{1,1} -.58208v_{1,2} = 0\\
+&\rightarrow -.37983v_{1,1} + .47017v_{1,2} = 0 \text{ and } .47017\left(-.37983v_{1,1} + .47017v_{1,2}\right) +.37983\left(.47017v_{1,1} -.58208v_{1,2}\right) = 0\\
+&\rightarrow -.37983v_{1,1} + .47017v_{1,2} = 0 \text{ and } 0 + 0 = 0\\
+&\rightarrow v_{1,2} = \frac{.37983}{.47017}v_{1,1}
+\end{align*}
+I choose $v_1 = \begin{bmatrix} .47017 & .37983 \end{bmatrix}$ to fit that description. However, it has to be a unit eigenvector, so:
+$$
+u_1 = \begin{bmatrix} \frac{.47017}{\sqrt{.47017^2 + .37983^2}} & \frac{.37983}{\sqrt{.47017^2 + .37983^2}} \end{bmatrix}^T = \begin{bmatrix}.7779 & .6284\end{bmatrix}^T
+$$
+Via the spectral decomposition theorem, I know that $u_2$ will be perpendicular to $u_1$. It has the same unit norm condition as $u_1$. I use a similar process as before to solve for $u_2$:
+\begin{align*}
+&(A - .5406I)v_2 = \overrightarrow{0}\\
+&\rightarrow \begin{pmatrix}
+.58207 & .47017\\
+.47017 & .37982
+\end{pmatrix}v_2 = \overrightarrow{0}\\
+&\rightarrow .58207v_{2,1} + .47017v_{2,2} = 0\\ 
+&\rightarrow v_{2,2} = \frac{-.58207}{.47017}v_{2,1}
+\end{align*}
+I choose $v_2 = \begin{bmatrix} -.47017 & .58207\end{bmatrix}$ to match this condition. I apply the unit norm condition to get the unit eigenvector:
+$$
+u_2 = \begin{bmatrix} \frac{-.47017}{\sqrt{.47017^2 + .58207^2}} & \frac{.58207}{\sqrt{.47017^2 + .58207^2}} \end{bmatrix}^T = \begin{bmatrix} -.6284 & .7779\end{bmatrix}^T
+$$
 
 ## c. Finding principal components
+Note the principal components are linear combinations of the original variables, or $Z_1 = .7779(X_1 - \bar{x}_1) + .6284(X_2 - \bar{X_2})$, and $Z_2 = -.6284(X_1 - \bar{x}_1) + .7779(X_2 - \bar{x}_2)$. I calculate the principal component scores:
+```{r, include = TRUE}
+Z_1 <- .7779 * data$X1 + .6284 * data$X2
+Z_2 <- -.6284 * data$X1 + .7779 * data$X2
+pc_scores <- as.data.frame(cbind(Z_1, Z_2))
+pc_scores
+```
+
+If I calculate the variance of each of the pc_scores:
+```{r, include = TRUE}
+sprintf("Variance, Z_1: %.4f", var(Z_1))
+sprintf("Variance, Z_: %.4f", var(Z_2))
+```
+The variance is just equal to the original eigenvalues.
 
 ## d. Calculating PVE (percent of variation explained)
+THe percent of the variation explained can be calcualted for both principal components:
+\begin{align*}
+&PVE_{\text{PC1}} = \frac{\lambda_1}{\lambda_1 + \lambda_2} = \frac{1.5025}{1.5025 + .5406} = .7354 \text{ or } 73.54\%\\
+&PVE_{\text{PC2}} = \frac{\lambda_2}{\lambda_1 + \lambda_2} = \frac{.5406}{1.5025 + .5406} = .2646 \text{ or } 26.46\%
+\end{align*}
 
 ## e. Repeat steps b-d in R
+I get the eigenvalues and eigenvectors using the 'eigen' function:
+```{r,include = TRUE}
+eval_1 <- eigen(var_covar)$values
+eval_1
+```
+```{r, include = TRUE}
+evec_1 <- eigen(var_covar)$vectors
+colnames(evec_1) <- c("PC1", "PC2")
+evec_1
+```
+
+Now, I do the same thing using prcomp:
+```{r, include = TRUE}
+eval_2 <- prcomp(data)$sdev^2
+eval_2
+```
+```{r, include = TRUE}
+evec_2 <- prcomp(data)$rotation
+evec_2
+```
+
+Then, I accomplish it using SVD:
+```{r, include = TRUE}
+eval_3 <- svd(var_covar)$d
+evec_3 <- svd(var_covar)$v
+eval_3
+```
+```{r, include = TRUE}
+colnames(evec_3) <- c("PC1", "PC2")
+evec_3
+```
+
+In each of these cases, the pc-scores are the following: 
+```{r, include = TRUE}
+Z_1_alt <- evec_3[1,1]*data$X1 + evec_3[1,2]*data$X2
+Z_2_alt <- evec_3[2,1]*data$X1 + evec_3[2,2]*data$X2
+pc_scores_alt <- as.data.frame(cbind(Z_1_alt, Z_2_alt))
+pc_scores_alt
+```
+The proportion of variance explained is:
+```{r, include = TRUE}
+pVE <- eval_3/sum(eval_3)
+pVE
+```
 
 ## f. Compare b-d, e results
+My results and the results from R are exactly the same, with the one exception that the signs of all of the principal component loadings are of opposite parity. This does not effect the eigenvalues or proportion of variance explained, and actually, either is correct.
 
 ## g. Plotting two PCs
-
+```{r,include = TRUE}
+plot(pc_scores$Z_1, pc_scores$Z_2)
+title("My Results")
+```
+```{r, include = TRUE}
+plot(pc_scores_alt$Z_1, pc_scores_alt$Z_2)
+title("R's Results")
+```
 
 # 2. Hierarchical Clustering
 
@@ -44,11 +181,36 @@ knitr::opts_chunk$set(echo = TRUE)
 # 4. Fun with PCA
 
 ## a. Calculating 1st principal component score, Obs. 1
+I follow the formula for principal component score:
+\begin{align*}
+z_{1,1} &= \sum_{j = 1}^{4}x_{1,j}u_{j,1}\\
+&= 1.2426 * .5359 + .7828 * .5832 -.5209 * .2782 - .0034 * .5434\\
+&= \mathbf{.9757}
+\end{align*}
 
 ## b. Calcualting 2nd principal component score, Obs. 2
+I follow the same formula from before:
+\begin{align*}
+z_{2,2} &= \sum_{j = 1}^{4}x_{2,j}u_{j.2}\\
+&= .5079 * -.4182 + 1.1068 * -.1880 - 1.2118 * .8728 + 2.4842 * .1673\\
+&= \mathbf{-1.0625}
+\end{align*}
 
-## c. Approximating $x_{i4}$ by first two PCs
+## c. Approximating $x_{1,4}$ by first two PCs
+I incorporate the 1st 2 principal components for the approximation of the 4th feature on the 1st observation:
+\begin{align*}
+x_{1,4} &\approx z_{1, 1}* u_{4,1} + z_{1,2} * u_{4,2}\\
+&= .9757 * .5434 + z_{1,2} * .1673
+\end{align*}
 
-## d. Approximation error of $x_{i3}$ by first two PCs
+I calculate the pc 2 score for the 1st observation:
+\begin{align*}
+z_{1,2} &= \sum_{j = 1}^{4}x_{1,j}u_{j,2}\\
+&= 1.2426 * -.4182 + .7828 * -.188 - .5209 * .8728 + -.0034 * .1673\\
+&= -1.122
+\end{align*}
+Therefore, $x_{1,4} \approx .9757 * .5434 - 1.122 *.1673 = \mathbf{.3425}$.
+
+## d. Approximation error of $x_{1, 3}$ by first two PCs
 
 ## e. Distance between first observation, approximation by first two Pcs
