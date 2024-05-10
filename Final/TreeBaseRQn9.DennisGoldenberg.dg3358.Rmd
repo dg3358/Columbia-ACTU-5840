@@ -1,0 +1,181 @@
+---
+title: "PM Spring 2024 Final Exam Question 9 Tree-based Methods"
+author: "Dennis Goldenberg"
+output:
+  pdf_document: default
+  word_document: default
+date: "5/9/2024"
+---
+
+# Note
+
+   - Change the author to your FirstName LastName 
+   - Change the filename to TreeBaseR9.FirstLast.UNI
+   - Perform work and clearly write down your answers to each question
+   - at 4:00pm, upload both the xxxx.Rmd and its knit (word or phf)
+   
+# Tree Based Question
+
+Please refer to dataset Hitters which is in package ISLR for the question. The salary, Salary, is the response and the rest are predictors.  We will use $\log (Salary)$ as the response when fitting the model.
+
+The packages used for the question: tree; randomForest; gbm. 
+
+Randomly split Hitters dataset into two parts, 2/3 for training and the other 1/3 for the testing datasets. You will use the training dataset to fit the model and the testing dataset for the test error. Please set random seed to set.seed(xxxx), where xxxx is the last 4 digit of your UNI. (Hint: before create the training and testing data, you should remove any NA.)
+
+Fit the models to the training data set and use the testing data set to obtain the mean square errors (MSEs) for the following:
+
+  - (a). Decision tree.
+  
+        i. Fit a regression tree with the response $\log(Salary)$ to the training set.  Plot the tree. How many terminal nodes and what are variables used? what is the most important variable? 
+       ii. What is the mean square error (MSE)?
+       iii. Use cross-validation to determine the size of the pruned tree.  Please plot the pruned tree. Does pruning the tree improve the test MSE?
+
+  - (b). Bagging (ntree=500) model to predict $\log(Salary)$. What is the test MSE? What are first two important variables? (hint: randomForest(log(Salary) $\sim$.,data=hitters,subset =train, ntree=500 , mtry=numvar, importance =TRUE)), where numvar = the number of predictors.) 
+  
+  - (c). Build random forests models to predict $\log(Salary)$. 
+  
+       i. Build a random forest (with ntree=500, use the default value for mtry by omitting mtry) model to predict $\log(Salary)$ and report the test MSE. Does the MSE improve over bagging? What are the first two important variables?
+      ii. Determine the optimal the number of random variables, \emph{mtry} (each split) that has the smallest MSE by performing a for loop for mtry from 2 to 15. What is the optimal mtry?
+  
+  - (d). Build Boosting trees.
+  
+       i. Build three boosting models with interaction depth \emph{interaction.depth} = 3 (4 leaves) and default shrinkage ($\lambda=0.1$) and ntree = 100, 500, and 1000 respectively. Obtain their test MSEs. Which of the ntree has the lowest MSE?
+       ii. Determine the optimal \emph{interaction.depth}, $d$ that has the lowest MSE by a for loop limiting the range of $d$ from 1 to 8 by using the ntree of the lowest MSE obtained in i. above and the default shrinkage parameter. What is the optimal $d$?
+       iii. Determine the optimal \emph{shrinkage} parameter $\lambda$ that has lowest MSE by a for loop limiting the range of $\lambda$ from 0.01 to 1 with 0.01 increment. Use the interaction.depth value you found in (\ref{tb_boost}).ii. and the ntree of the lowest MSE for the ntree in (\ref{tb_boost}).i. above. What it the optimal $\lambda$?
+       iv. Compare the test MSEs in (d).i. - (d).iii. above.
+
+# library
+
+```{r warning=FALSE, include=FALSE}
+library(tree)
+library (randomForest)
+library (gbm)
+
+library(ISLR)
+
+```
+
+## Dataset for the question.
+
+```{r include=FALSE}
+library(ISLR)
+names(Hitters)
+
+```
+
+## (0). Split data into training and testing datasets and remove NA
+
+```{r, include = TRUE}
+set.seed(1)
+#Remove NA's
+na <- c()
+for(i in 1:length(names(Hitters))){
+  na <- union(na, which(is.na(Hitters[i])))
+}
+data <- Hitters[setdiff(1:dim(Hitters)[1], na),]
+#Modify Response
+data$Salary <- log(data$Salary)
+#Generate training, test data
+train_sample <- sort(sample(seq_len(nrow(data)), size =floor(2 * nrow(data)/3)))
+train_Data <- data[train_sample,]
+test_Data <- data[-train_sample,]
+```
+
+## (a).  Decision tree
+
+  - (a). Decision tree.
+  
+        i. Fit a regression tree with the response $\log(Salary)$ to the training set.  Plot the tree. How many terminal nodes and what are variables used? what is the most important variable? 
+       ii. What is the mean square error (MSE)?
+       iii. Use cross-validation to determine the size of the pruned tree.  Please plot the pruned tree. Does pruning the tree improve the test MSE?
+
+your work and answers
+
+### i.
+```{r, include = TRUE}
+rtree <- tree(Salary ~., data = train_Data)
+plot(rtree)
+text(rtree)
+```
+There are $\mathbf{10}$ terminal nodes, and the variables that are used are: CAtBat, CHits, Walks, Errors, Hits, RBI, and CHmRun. THe most important variable is $\textbf{CAtBat}$, or career at bats, which is split on first.
+
+```{r, include = TRUE}
+summary(rtree)
+```
+
+### ii. What is the MSE?
+```{r, include = TRUE}
+predictions <- predict(rtree, newdata = test_Data)
+MSE_tree <- sum((test_Data$Salary - predictions)^2/length(predictions))
+sprintf("MSE: %.4f", MSE_tree)
+```
+
+### iii. Pruning the tree and plotting the optimal tree
+```{r, include = TRUE}
+cv <- cv.tree(rtree, K = 10, FUN = prune.tree)
+par(oma = c(0,0,2,0))
+plot(cv)
+title("main = Deviance of Tree vs. Number of Leaves, corresponding alpha",
+      outer = TRUE)
+```
+The optimal number of terminal nodes seems to be $\mathbf{6}$. I prune the tree:
+
+```{r, include = TRUE}
+plot(prune.tree(rtree))
+```
+
+
+## (b) Bagging tree
+
+  - (b). Bagging (ntree=500) model to predict $\log(Salary)$. What is the test MSE? What are first two important variables? (hint: randomForest(log(Salary) $\sim$.,data=hitters,subset =train, ntree=500 , mtry=numvar, importance =TRUE)), where numvar = the number of predictors.) 
+I build the bagged tree:
+```{r, include = TRUE}
+bagged <- randomForest(Salary ~., data = train_Data, ntree = 500,
+                       mtry = dim(data)[2] - 1, importance = TRUE)
+bagged$importance
+```
+
+The most importance variables, both by the percent they increased MSE, and the percent they increased node purity, are $\mathbf{CAtBat}$, and $\mathbf{CWalks}$. I calculate the test MSE:
+```{r, include = TRUE}
+predict_bagged <- predict(bagged, newdata = test_Data)
+MSE_bagged <- sum((predict_bagged - test_Data$Salary)^2/length(predict_bagged))
+sprintf("MSE: %.4f", MSE_bagged)
+```
+your work and answers
+
+
+## (c) Random Forests
+
+  - (c). Build random forests models to predict $\log(Salary)$. 
+  
+       i. Build a random forest (with ntree=500, use the default value for mtry by omitting mtry) model to predict $\log(Salary)$ and report the test MSE. Does the MSE improve over bagging? What are the first two important variables?
+      ii. Determine the optimal the number of random variables, \emph{mtry} (each split) that has the smallest MSE by performing a for loop for mtry from 2 to 15. What is the optimal mtry?
+### i
+```{r, include = TRUE}
+forest <- randomForest(Salary ~., data = train_Data, ntree = 500,
+                      importance = TRUE)
+forest$importance
+```
+This time, the two most important variables are $\mathbf{CAtBat}$ and $\mathbf{CRuns}$, by increased node purity. I calculate the MSE:
+
+```{r,include = TRUE}
+predict_forest <- predict(forest, newdata = test_Data)
+MSE_forest <- sum((predict_forest - test_Data$Salary)^2/length(predict_forest))
+sprintf("MSE: %.4f", MSE_forest)
+```
+The random forest has a slight improvement over bagging, likely due to reduced variance.
+
+your work and answers 
+
+
+## (d) Boosting 
+
+  - (d). Build Boosting trees.
+  
+       i. Build three boosting models with interaction depth \emph{interaction.depth} = 3 (4 leaves) and default shrinkage ($\lambda=0.1$) and ntree = 100, 500, and 1000 respectively. Obtain their test MSEs. Which of the ntree has the lowest MSE?
+       ii. Determine the optimal \emph{interaction.depth}, $d$ that has the lowest MSE by a for loop limiting the range of $d$ from 1 to 8 by using the ntree of the lowest MSE obtained in i. above and the default shrinkage parameter. What is the optimal $d$?
+       iii. Determine the optimal \emph{shrinkage} parameter $\lambda$ that has lowest MSE by a for loop limiting the range of $\lambda$ from 0.01 to 1 with 0.01 increment. Use the interaction.depth value you found in (\ref{tb_boost}).ii. and the ntree of the lowest MSE for the ntree in (\ref{tb_boost}).i. above. What it the optimal $\lambda$?
+       iv. Compare the test MSEs in (d).i. - (d).iii. above.
+
+your work and answers
+       
